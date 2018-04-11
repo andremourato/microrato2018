@@ -1,0 +1,109 @@
+
+***************************************************************************
+*  CiberRato Robot Simulation Environment                                 *
+*  Explorer 2018 - Universidade de Aveiro                                 *
+***************************************************************************
+
+### Information
+
+  CiberRato Robot Simulation Environment simulates the movement
+  of robots inside a labyrinth.  Robots objective is to go from their
+  starting position to beacon area and then return to their start position.
+  This environment is used in
+  Explorer 2018
+  http://microrato.ua.pt/
+
+  This is the source code release of CiberRato tools.
+
+### Version Info
+
+  CiberRato tools v2.2.4
+
+  simulator         version 2.2.4  - April 10, 2018
+  Viewer            version 2.2.4  - April 10, 2018
+  logplayer         version 2.2.4  - April 10, 2018
+  robsample         version 2.2.4  - April 10, 2018
+  GUISample         version 2.2.4  - April 10, 2018
+  jClient           version 2.2.4  - April 10, 2018
+  pClient           version 2.2.4  - April 10, 2018
+
+
+### Contents
+
+  simulator/           The simulator source code
+  Viewer/              The Visualizer source code
+  logplayer/           The logplayer source code
+  GUISample/           Graphical robot agent (C++) source code
+  robsample/           robot agent (C) source code
+  jClient/             robot agent (Java) source code
+  pClient/             robot agent (Python) source code
+  Labs/                examples of labyrinths used in previous competitions
+
+  README               This README file
+
+  startAll             Startup script that runs the simulator, the 
+                       visualizer and 1 GUISample
+  startSimViewer       Startup script that runs the simulator and the Viewer
+
+### Operating System and Compiler
+
+    The source code was compiled with gcc/g++ - Gnu Project C/C++ Compiler
+    (gcc version  5.4.0) using the Qt libraries (release 4.8.7) on 
+    Ubuntu 16.04, but should compile in most Linux distributions with
+    a general C++ compiles and Qt 4.x versions libraries installed.
+    It is also required to have qmake (for Qt4) installed.
+
+    More information on Qt can be found at http://www.qt.io
+
+
+### Instructions on how to use this release:
+
+    
+    * To compile the CiberRato tools
+
+        1- install compiler, Qt4 libraries and qmake (for Qt4)
+
+        2- execute make:
+
+          make
+
+    * After compiling, to run the simulator, the visualizer and 1 GUISample
+
+       ./startAll
+
+    * After compliling, to run the simulator and the Viewer
+
+       ./startSimViewer
+
+       Then each robot should be started manually
+
+    * After compiling, to run the logplayer
+
+       cd logplayer
+       logplayer -log <logfile>
+
+
+### More Information
+
+    Please consult:
+        http://microrato.ua.pt/
+
+    or Please Contact :
+        Nuno Lau
+        University of Aveiro
+        email: nunolau@ua.pt
+
+        Artur C. Pereira
+        University of Aveiro
+        email: artur@ua.pt
+
+        Antonio Neves
+        University of Aveiro
+        email: an@ieeta.pt
+
+        Joao Figueiredo
+        University of Aveiro
+        email: joao.figueiredo@ieeta.pt
+
+Copyright (C) 2001-2018 Universidade de Aveiro
+
