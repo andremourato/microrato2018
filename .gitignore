@@ -1,0 +1,4 @@
+#Ignores garbage
+*.hex
+*.elf
+*.map
