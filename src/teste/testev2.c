@@ -9,16 +9,20 @@
 #define BI_DIRECTION_TWO 4;
 #define BI_DIRECTION_THREE 5;
 
+volatile int millis = 0;
+
 int stack[50] = {};
 int stackSize = 0;
-int isInverted = 0;
 int isTurning = 0;
-volatile static int turningTimer = 0;
+int sensorTurn = 0;
+
+int isInverted = 0;
 
 // Velocidades
 int speed = 40;
-int adjust = 5;
-int turningSpeed = 45;
+int adjust = 10;
+int turningSpeed = 40;
+int reverseSpeed = 50;
 
 int main(void)
 {
@@ -29,18 +33,15 @@ int main(void)
 	TRISE = TRISE & 0xFFF0;
 	int sensor;
 
-	/*
 	// Timer utilitario de 4 hz 
-	T1CONbits.TCKPS = 2;		// 1:64 prescaler
-	PR1 = PBCLK / (64 * (4 + 1));   // Fout = 20M / (64 * (4 + 1)) = 4 Hz
+	T1CONbits.TCKPS = 3;		// 1:64 prescaler
+	PR1 = PBCLK / 256 / 1000 - 1;   
 	TMR1 = 0;            		// Reset timer T2 count register
 	T1CONbits.TON = 1;   		// Enable timer T2 (must be the last command of 
 
 	IPC1bits.T1IP = 2;   // Interrupt priority (must be in range [1..6]) 
    	IEC0bits.T1IE = 0;   // Disable timer T2 interrupts 
    	IFS0bits.T1IF = 0;   // Reset timer T2 interrupt flag 
-
-	*/
 
 	// Inicializacao da pic
 	initPIC32();
@@ -65,42 +66,28 @@ int main(void)
 			sensor = readLineSensors(0);
 			LATE = (LATE & 0xFFF0) | (sensor & 0x0F);
 
-			printInt(sensor, 10);
-
 			if((sensor == 0x10) || (sensor == 0x18) || (sensor == 0x1E)) sensor = 0x1C; // 10000 e 11000 e 11110 para 11100;
 			if((sensor == 0x01) || (sensor == 0x03) || (sensor == 0x0F)) sensor = 0x07; // 00001 e 00011 e 01111 para 00111;
 		
-
-			// Se o sensor detetar uma curva ou dead-end
-			if(((sensor == 0x1C) || (sensor == 0x07) || (sensor == 0x00) || (sensor == 0x1F)) && !isTurning) {
+			// Se o sensor detetar uma curva
+			if(((sensor == 0x07) || (sensor == 0x1C) || (sensor == 0x1F)) && !isTurning) {
 
 				isTurning = 1;
+				stack[stackSize++] = sensor;
 
-				switch(sensor) {
-
-					case 0x1C: // 11100
-						setVel2(-turningSpeed / 4, turningSpeed);
-						stack[stackSize++] = TURNING_LEFT;
-						break;
-					case 0x07: // 00111
-						setVel2(turningSpeed, - turningSpeed / 4);
-						stack[stackSize++] = TURNING_RIGHT;
-						break;
-					case 0x00: // 00000
-						setVel2(turningSpeed, -turningSpeed);
-						isInverted = 1;
-						break;
-					case 0x1F: // 11111
-						setVel2(turningSpeed, 0);	
-						stack[stackSize++] = TURNING_LEFT;					
-						break;
-
-				}
-			
+				if(sensor != 0x1c) 
+					setVel2(turningSpeed, - turningSpeed - adjust);
+				else 
+					setVel2(-turningSpeed - adjust, turningSpeed);
+				
+				
 			// Se estiver a ir em frente
 			} else if((sensor == 0x04) || (sensor == 0x0E) || (sensor == 0x0C) || (sensor == 0x08) || (sensor == 0x06) || (sensor == 0x02)) {
 
 				isTurning = 0;
+				
+				millis = 0;
+				IEC0bits.T1IE = 0;
 
 				switch(sensor) {
 
@@ -118,7 +105,10 @@ int main(void)
 						break;
 
 				}
-			} 
+			} else if(sensor == 0x00 && !isTurning) { // dead-nd
+				setVel2(-reverseSpeed, reverseSpeed);
+				isInverted = 1;
+			}
 					
 
 		} while(!stopButton());
@@ -129,9 +119,17 @@ int main(void)
 
 }
 
-void push(int direction) {
+void _int_(4) isr_T1() {
 
-	stack[stackSize++] = direction;
+	millis++;	
+	printf("%d\n", millis);
+	IFS0bits.T1IF = 0;
+
+}
+
+void push(int sensor) {
+
+	stack[stackSize++] = sensor;
 
 }
 
