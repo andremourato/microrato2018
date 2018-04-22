@@ -18,7 +18,7 @@
 // ****************************************************************************
 
 #include "mr32.h"
-#include <math.h>
+#include "include/math.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -760,7 +760,6 @@ void _int_(_TIMER_2_VECTOR) isr_t2(void)
    {
       readEncoders(&encLeft, &encRight);
       updateLocalization(encLeft, encRight);
-      encLeftAcc += encLeft;
       encRightAcc += encRight;
 
       if(cntT2Ticks & 0x01)                  // This way SAMPLING_T is 20 ms

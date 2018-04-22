@@ -1,5 +1,5 @@
 #include "mr32.h"
-#include <stdlib.h>
+#include "include/stdlib.h"
 
 #define STOP -1;
 #define MOVING 0;
@@ -52,12 +52,12 @@ int main(void)
 
 		while(!startButton()) {
 		
-		
+			/*
 			LATE = (LATE & 0xFFF0) | stack[stackSize - 1];
 			delay(5000);
 			LATE = (LATE & 0xFFF0) | stackSize;
 			delay(5000);
-			
+			*/
 
 		}
 		
@@ -74,6 +74,7 @@ int main(void)
 
 				isTurning = 1;
 				stack[stackSize++] = sensor;
+				IEC0bits.T1IE = 1;
 
 				if(sensor != 0x1c) 
 					setVel2(turningSpeed, - turningSpeed - adjust);
