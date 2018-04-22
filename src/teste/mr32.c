@@ -18,7 +18,7 @@
 // ****************************************************************************
 
 #include "mr32.h"
-#include "include/math.h"
+#include <math.h>
 
 #ifdef __cplusplus
 extern "C" {
