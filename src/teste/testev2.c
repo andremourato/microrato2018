@@ -67,8 +67,8 @@ int main(void)
 
 			printInt(sensor, 10);
 
-			if((sensor == 0x10) || (sensor == 0x08) || (sensor == 0x18) || (sensor == 0x1E)) sensor = 0x1C; // 10000 e 01000 e 11000 e 11110 para 11100;
-			if((sensor == 0x01) || (sensor == 0x02) || (sensor == 0x03) || (sensor == 0x0F)) sensor = 0x07; // 00001 e 00010 e 00011 e 01111 para 00111;
+			if((sensor == 0x10) || (sensor == 0x18) || (sensor == 0x1E)) sensor = 0x1C; // 10000 e 11000 e 11110 para 11100;
+			if((sensor == 0x01) || (sensor == 0x03) || (sensor == 0x0F)) sensor = 0x07; // 00001 e 00011 e 01111 para 00111;
 		
 
 			// Se o sensor detetar uma curva ou dead-end
@@ -79,11 +79,11 @@ int main(void)
 				switch(sensor) {
 
 					case 0x1C: // 11100
-						setVel2(0, turningSpeed);
+						setVel2(-turningSpeed / 4, turningSpeed);
 						stack[stackSize++] = TURNING_LEFT;
 						break;
 					case 0x07: // 00111
-						setVel2(turningSpeed, 0);
+						setVel2(turningSpeed, - turningSpeed / 4);
 						stack[stackSize++] = TURNING_RIGHT;
 						break;
 					case 0x00: // 00000
