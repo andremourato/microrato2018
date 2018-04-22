@@ -1,5 +1,5 @@
 #include "mr32.h"
-#include "include/stdlib.h"
+#include <stdlib.h>
 
 #define STOP -1;
 #define MOVING 0;
