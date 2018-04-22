@@ -1,5 +1,4 @@
 #include "mr32.h"
-#include <stdlib.h>
 
 #define STOP -1;
 #define MOVING 0;
@@ -9,20 +8,25 @@
 #define BI_DIRECTION_TWO 4;
 #define BI_DIRECTION_THREE 5;
 
+static const int turningTime = 850; // hardcoded
+
 volatile int millis = 0;
+volatile int millisTurn = 0;
 
 int stack[50] = {};
 int stackSize = 0;
 int isTurning = 0;
 int sensorTurn = 0;
 
-int isInverted = 0;
+int isInversed = 0;
+
+int turnDetected = 0; // Para evitar o robo mudar de direcao no caso de os sensores detetarem a reta final quando nao deviam (dead end perto de meta, e ao rodar os sensores ficarem em contacto com a meta)
 
 // Velocidades
 int speed = 40;
 int adjust = 10;
 int turningSpeed = 40;
-int reverseSpeed = 50;
+int reverseSpeed = 45;
 
 int main(void)
 {
@@ -51,7 +55,9 @@ int main(void)
 	while(1) {
 
 		while(!startButton()) {
-		
+			
+			IEC0bits.T1IE = 0;	
+			LATE = (LATE & 0xFFF0) | turnDetected;	
 			/*
 			LATE = (LATE & 0xFFF0) | stack[stackSize - 1];
 			delay(5000);
@@ -69,25 +75,45 @@ int main(void)
 			if((sensor == 0x10) || (sensor == 0x18) || (sensor == 0x1E)) sensor = 0x1C; // 10000 e 11000 e 11110 para 11100;
 			if((sensor == 0x01) || (sensor == 0x03) || (sensor == 0x0F)) sensor = 0x07; // 00001 e 00011 e 01111 para 00111;
 		
-			// Se o sensor detetar uma curva
+			// ------------- Se o sensor detetar uma curva ----------
 			if(((sensor == 0x07) || (sensor == 0x1C) || (sensor == 0x1F)) && !isTurning) {
 
-				isTurning = 1;
-				stack[stackSize++] = sensor;
-				IEC0bits.T1IE = 1;
-
-				if(sensor != 0x1c) 
-					setVel2(turningSpeed, - turningSpeed - adjust);
-				else 
-					setVel2(-turningSpeed - adjust, turningSpeed);
-				
-				
-			// Se estiver a ir em frente
-			} else if((sensor == 0x04) || (sensor == 0x0E) || (sensor == 0x0C) || (sensor == 0x08) || (sensor == 0x06) || (sensor == 0x02)) {
-
-				isTurning = 0;
+				if(isInversed) isInversed = 0; 
 				
 				millis = 0;
+				turnDetected = 1; // Vai ficar a 0 logo se houver caminho em frente
+
+				if(sensor != 0x1C) {
+					isTurning = 1;
+					stack[stackSize++] = sensor;
+					IEC0bits.T1IE = 1;
+					setVel2(turningSpeed, - turningSpeed - adjust);
+				}
+				
+			// ---------- Se econtrar uma dead end -----------------
+			} else if(sensor == 0x00 && !isTurning && !isInversed) {
+				millis = 0;
+				IEC0bits.T1IE = 1;
+				setVel2(-reverseSpeed, reverseSpeed);
+				isInversed = 1;
+				isTurning = 1;
+
+			// ----------- Se estiver a ir em frente ---------------
+			// Serve como ponto de paragem de uma viragem ou inversao
+			// Durante uma inversao e preciso ter cuidado com a meta, pois pode estar proximo
+			// Do dead-end e os sensores centrais ao detetarem-ne fazem com que o robo saia de sitio 
+			// turnDetected serve para reconhecer uma curva, e os millis para o caso acima da inversao
+			// Sabe-se por tentativa que a inversao demora +' 730-850 ms, logo 
+			} else if(((sensor == 0x04) || (sensor == 0x0E) || (sensor == 0x0C) || (sensor == 0x08) || (sensor == 0x06) || (sensor == 0x02)) 
+													&& (turnDetected || millis > turningTime || !isTurning)){
+				
+				// Quando ha so uma curva a esquerda mas como por default ele vai em frente contra um dead-end, ativa a flag
+				// De inversao quando na realidade nao devia, pois so esta a virar
+				if(isInversed && millis < 500)
+					isInversed = 0;
+
+				turnDetected = 0;
+				isTurning = 0;
 				IEC0bits.T1IE = 0;
 
 				switch(sensor) {
@@ -106,9 +132,6 @@ int main(void)
 						break;
 
 				}
-			} else if(sensor == 0x00 && !isTurning) { // dead-nd
-				setVel2(-reverseSpeed, reverseSpeed);
-				isInverted = 1;
 			}
 					
 
