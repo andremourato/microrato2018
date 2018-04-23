@@ -19,6 +19,7 @@ int isTurning = 0;
 int sensorTurn = 0;
 
 int isInversed = 0;
+int mayHaveFinished = 0; //detects that it may have finished
 
 int turnDetected = 0; // Para evitar o robo mudar de direcao no caso de os sensores detetarem a reta final quando nao deviam (dead end perto de meta, e ao rodar os sensores ficarem em contacto com a meta)
 
@@ -27,11 +28,22 @@ int speed = 40;
 int adjust = 10;
 int turningSpeed = 40;
 int reverseSpeed = 45;
+/*
+Para os valores
+speed = 40;
+adjust = 10;
+turningSpeed = 40;
+reverseSpeed = 45;
+O robô consegue percorrer o labirinto todo em 1 minuto e 23 segundos.
+*/
+
+void pop();
+int peek();
+void push();
+void waitingStart();
 
 int main(void)
 {
-
-	// Stack para guardar as turns
 
 	// Configuracao dos leds
 	TRISE = TRISE & 0xFFF0;
@@ -46,51 +58,45 @@ int main(void)
 	IPC1bits.T1IP = 2;   // Interrupt priority (must be in range [1..6]) 
    	IEC0bits.T1IE = 0;   // Disable timer T2 interrupts 
    	IFS0bits.T1IF = 0;   // Reset timer T2 interrupt flag 
-
+	
 	// Inicializacao da pic
 	initPIC32();
 	closedLoopControl( false );
-	setVel2(0, 0);	
-
+	setVel2(0, 0);
+	waitingStart();
 	while(1) {
-
-		while(!startButton()) {
-			
-			IEC0bits.T1IE = 0;	
-			LATE = (LATE & 0xFFF0) | turnDetected;	
-			/*
-			LATE = (LATE & 0xFFF0) | stack[stackSize - 1];
-			delay(5000);
-			LATE = (LATE & 0xFFF0) | stackSize;
-			delay(5000);
-			*/
-
-		}
 		
-		do {	
-			
+		do {
 			sensor = readLineSensors(0);
-			LATE = (LATE & 0xFFF0) | (sensor & 0x0F);
-
+			LATE = (LATE & 0xFFF0) | (sensor & 0x0F); //USED FOR DEBUG
+			
+			//If all sensors were enabled and it's still turning, means it found the end
+			if(mayHaveFinished && millis > 700){ //FOUND THE GOAL!
+				main();
+			}
 			if((sensor == 0x10) || (sensor == 0x18) || (sensor == 0x1E)) sensor = 0x1C; // 10000 e 11000 e 11110 para 11100;
 			if((sensor == 0x01) || (sensor == 0x03) || (sensor == 0x0F)) sensor = 0x07; // 00001 e 00011 e 01111 para 00111;
 		
 			// ------------- Se o sensor detetar uma curva ----------
 			if(((sensor == 0x07) || (sensor == 0x1C) || (sensor == 0x1F)) && !isTurning) {
-
-				if(isInversed) isInversed = 0; 
+				if(sensor == 0x1F){
+					mayHaveFinished = 1;
+					millis = 0;
+				}
+				if(isInversed) isInversed = 0;
 				
-				millis = 0;
 				turnDetected = 1; // Vai ficar a 0 logo se houver caminho em frente
 
 				if(sensor != 0x1C) {
 					isTurning = 1;
-					stack[stackSize++] = sensor;
+					push(sensor);
 					IEC0bits.T1IE = 1;
 					setVel2(turningSpeed, - turningSpeed - adjust);
 				}
+					
+				//LATE = (LATE & 0xFFF0) | isTurning << 2 | mayHaveFinished; //USED FOR DEBUG				
 				
-			// ---------- Se econtrar uma dead end -----------------
+			// ---------- Se encontrar uma dead end -----------------
 			} else if(sensor == 0x00 && !isTurning && !isInversed) {
 				millis = 0;
 				IEC0bits.T1IE = 1;
@@ -106,7 +112,7 @@ int main(void)
 			// Sabe-se por tentativa que a inversao demora +' 730-850 ms, logo 
 			} else if(((sensor == 0x04) || (sensor == 0x0E) || (sensor == 0x0C) || (sensor == 0x08) || (sensor == 0x06) || (sensor == 0x02)) 
 													&& (turnDetected || millis > turningTime || !isTurning)){
-				
+				mayHaveFinished = 0;				
 				// Quando ha so uma curva a esquerda mas como por default ele vai em frente contra um dead-end, ativa a flag
 				// De inversao quando na realidade nao devia, pois so esta a virar
 				if(isInversed && millis < 500)
@@ -136,11 +142,31 @@ int main(void)
 					
 
 		} while(!stopButton());
-
+		
 		setVel2(0,0);
-
+		waitingStart();
 	}	
 
+}
+
+void waitingStart(){
+	while(!startButton()) {
+		
+		IEC0bits.T1IE = 0;
+		/* THe LEDS blink repeateadly when the robot is waiting start */
+		LATE = LATE & 0xFF00;
+		delay(5000);
+		LATE = (LATE & 0xFF00) | 0x00FF;
+		delay(5000);
+		/*LATE = (LATE & 0xFFF0) | turnDetected; //USED FOR DEBUG*/
+		/*
+		LATE = (LATE & 0xFFF0) | stack[stackSize - 1];
+		delay(5000);
+		LATE = (LATE & 0xFFF0) | stackSize;
+		delay(5000);
+		*/
+
+	}
 }
 
 void _int_(4) isr_T1() {
