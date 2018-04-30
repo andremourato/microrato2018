@@ -12,43 +12,54 @@ int sensor;
 //Número de tentativas. Incrementado no final de cada tentativa
 static int numTries = 0;
 
-void run();
-void configureRobot();
-void waitingStart();
-void configureTimer();
-//void chooseBestPath();
+//Funções auxiliares (sensores,etc.)
+
+
+
 
 /* Algoritmo para preencher a stack. Vai virar sempre à direita */
 void findBestPath(){
 	int finished = 0;
 	while(!finished && !stopButton()) {
-		
+		/*COMPLETAR O ALGORITMO AQUI*/
 	}
 }
+
+//**************************** Funções para controlar o estado do robot ****************************
+//Estas funções tem o objetivo de: inicializar o robot (timer,variaveis,etc.),
+//decidir se o robot está à espera do botão start e determinar se o robot já conhece o caminho mais rápido
+//ou se ainda vai percorrer o labirinto pela primeira vez
+
+void run();
+void waitingStart();
+void configureRobot();
+void configureTimer();
 
 int main(void)
 {
 	configureRobot(); //Configura o robot
 	waitingStart();
-}
-
-/*Enquanto o botao start nao for premido, fica à espera*/
-void waitingStart(){
-	while(!startButton());
-	run(); //Executa uma nova tentativa
+	return 0;
 }
 
 /* Vai determinar se o robot já sabe o caminho mais curto ou não */
 void run(){
 	//Se for a primeira tentativa, ainda tem que encontrar o caminho
 	//if(numTries==0)
-		findBestPath();
+		findBestPath(); //Preenche a stack
 	//else //Caso contrario, vai percorrer o caminho mais curto
-		//chooseBestPath(); //Será descomentado mais tarde
+		//chooseBestPath(); //Será descomentado mais tarde. Segue a stack
 	numTries += 1;
 	waitingStart();
 }
 
+/*Enquanto o botao start nao for premido, fica à espera*/
+void waitingStart(){
+	while(!startButton()); //Enquanto o botão start nao for premido
+	run(); //Executa uma nova tentativa
+}
+
+/*Configurações do robot*/
 void configureRobot(){
 	// Configuracao dos leds
 	TRISE = TRISE & 0xFFF0;
@@ -60,12 +71,7 @@ void configureRobot(){
 	setVel2(0,0);
 }
 
-void _int_(4) isr_T1() {
-	millis++;
-	IFS0bits.T1IF = 0;
-
-}
-
+/*Configura o temporizador*/
 void configureTimer(){
 	// Timer utilitario de 4 hz 
 	T1CONbits.TCKPS = 3;		// 1:64 prescaler
@@ -78,5 +84,10 @@ void configureTimer(){
    	IEC0bits.T1IE = 1; 	 //Enables interrupts
 }
 
+/*Atualiza o temporizador*/
+void _int_(4) isr_T1() {
+	millis++;
+	IFS0bits.T1IF = 0;
 
+}
 
