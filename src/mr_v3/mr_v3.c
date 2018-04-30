@@ -15,8 +15,6 @@ static int numTries = 0;
 //Funções auxiliares (sensores,etc.)
 
 
-
-
 /* Algoritmo para preencher a stack. Vai virar sempre à direita */
 void findBestPath(){
 	int finished = 0;
