@@ -3,25 +3,29 @@
 volatile int millis = 0;
 
 // Velocidades
-int speed = 40; //Velocidade em linha reta
+int speed = 50; //Velocidade em linha reta
 int adjust = 10; //Velocidade de ajuste. Vai ser somado a uma roda e subtraido à outra
 int turningSpeed = 40; //Velocidade a virar
 int sensor;
 
 //Informação sobre o estado do jogo
 //Número de tentativas. Incrementado no final de cada tentativa
-static int numTries = 0;
+static int numTries = 0; //Não deve ser feito o reset desta variável
 
-//Funções auxiliares (sensores,etc.)
-
-
+//**************************** Funções auxiliares (sensores,etc.) ****************************
+void stopRobot(){ setVel2(0,0); }
+void resetAllVariables(){ stopRobot(); }
+//**************************** Algoritmos para percorrer o labirinto ****************************«
 /* Algoritmo para preencher a stack. Vai virar sempre à direita */
 void findBestPath(){
 	int finished = 0;
 	while(!finished && !stopButton()) {
-		/*COMPLETAR O ALGORITMO AQUI*/
+		sensor = readLineSensors(0);
+		setVel2(speed,speed);
 	}
 }
+
+
 
 //**************************** Funções para controlar o estado do robot ****************************
 //Estas funções tem o objetivo de: inicializar o robot (timer,variaveis,etc.),
@@ -53,7 +57,10 @@ void run(){
 
 /*Enquanto o botao start nao for premido, fica à espera*/
 void waitingStart(){
+	resetAllVariables();
+	led(2,1);
 	while(!startButton()); //Enquanto o botão start nao for premido
+	led(2,0);
 	run(); //Executa uma nova tentativa
 }
 
@@ -65,8 +72,8 @@ void configureRobot(){
 	configureTimer();
 	// Inicializacao da pic
 	initPIC32();
-	closedLoopControl(false);
-	setVel2(0,0);
+	closedLoopControl(false); //Ativa a estabilização por PID
+	stopRobot();
 }
 
 /*Configura o temporizador*/
@@ -88,4 +95,6 @@ void _int_(4) isr_T1() {
 	IFS0bits.T1IF = 0;
 
 }
+
+
 
