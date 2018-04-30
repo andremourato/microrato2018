@@ -3,8 +3,8 @@
 volatile int millis = 0;
 
 // Velocidades
-int speed = 50; //Velocidade em linha reta
-int adjust = 10; //Velocidade de ajuste. Vai ser somado a uma roda e subtraido à outra
+int speed = 40; //Velocidade em linha reta
+int adjust = 8; //Velocidade de ajuste. Vai ser somado a uma roda e subtraido à outra
 int turningSpeed = 40; //Velocidade a virar
 int sensor;
 
@@ -14,14 +14,33 @@ static int numTries = 0; //Não deve ser feito o reset desta variável
 
 //**************************** Funções auxiliares (sensores,etc.) ****************************
 void stopRobot(){ setVel2(0,0); }
+void adjustToTheLeft(){ setVel2(speed-adjust,speed+adjust); };
+void adjustToTheRight(){ setVel2(speed+adjust,speed-adjust); }
+void goFoward(){ setVel2(speed,speed); }
 void resetAllVariables(){ stopRobot(); }
+int centerSensors(){ return sensor ==  0b00110 || sensor ==  0b01100 || sensor ==  0b00100; }
 //**************************** Algoritmos para percorrer o labirinto ****************************«
 /* Algoritmo para preencher a stack. Vai virar sempre à direita */
 void findBestPath(){
 	int finished = 0;
 	while(!finished && !stopButton()) {
 		sensor = readLineSensors(0);
-		setVel2(speed,speed);
+		leds(sensor);
+		//if(centerSensors()){ //If it is going forward
+		switch(sensor){
+				case 0b00100:
+				case 0b01110:
+					goFoward();
+					break;
+				case 0b01100:
+				case 0b01000:
+					adjustToTheLeft();
+					break;
+				case 0b00110:
+				case 0b00010:
+					adjustToTheRight();
+					break;
+		}
 	}
 }
 
