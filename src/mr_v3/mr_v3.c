@@ -12,14 +12,18 @@ void invertDirection();
 volatile int millis = 0;
 
 //PID
-
+/* Para calibrar Kp, Ki e Kd: calibra-se sempre de cima para baixo. Primeiro calibra-se
+o Kp com o Ki = 0 e o Kd = 0. Testem várias vezes com valores diferentes.
+Quando ele estiver bom, alterem o Ki e assim sucessivamente*/
 //Proporionalidade
 double Kp = 3.5; //Contante de proporcionalidade. A melhor foi Kp = 3.5
 //Integral
-double Ki= 0.05; //a melhor foi Ki = 0.05
+double Ki = 0.00; //a melhor foi Ki = 0.05
 int I = 0;
 int INTEGRAL_CAP = 50;
 //Derivada
+double Kd = 0;
+int D;
 double prevError;
 
 //Constantes
@@ -49,32 +53,27 @@ void adjust(int error){  //Error pode ter os valores:-3, -2, -1, 0, 1, 2, 3
 	I += error;
 	I = I > INTEGRAL_CAP ? INTEGRAL_CAP : I;  //Não deixa o erro tornar-se muito grande
 	I = I < -INTEGRAL_CAP ? -INTEGRAL_CAP : I; //Não deixa o erro tornar-se muito pequeno
-	int leftSpeed = speed  + (int)(Kp*(double)error) + (int)((double)I*Ki);
-	int rightSpeed = speed - (int)(Kp*(double)error) - (int)((double)I*Ki);
+	D = error-prevError;
+	int leftSpeed  = speed + (int)(Kp*(double)error) + (int)((double)I*Ki) + (int)((double)D*Kd);
+	int rightSpeed = speed - (int)(Kp*(double)error) - (int)((double)I*Ki) - (int)((double)D*Kd);
 	setVel2(leftSpeed,rightSpeed);
 	prevError = error;
-	printf("I=%d\n",I);
-	printf("Error=%d | %d | %d\n",error,leftSpeed,rightSpeed);
+	//printf("Error=%d | %d | %d\n",error,leftSpeed,rightSpeed);
 }
 void turnRight(){
 	led(2,1);
-	I = 0;
 	setVel2(turningSpeed,-turningSpeed);
-	millis = 0;
 	while(!detectedLineAhead()){ sensor = readLineSensors(0); }
-	printf("%d\n",millis);
 	led(2,0);
 }
 void turnLeft(){
 	led(3,1);
-	I = 0;
 	setVel2(-turningSpeed,turningSpeed);
 	while(!detectedLineAhead()){ sensor = readLineSensors(0); }
 	led(3,0);
 }
 void invertDirection(){
 	led(4,1);
-	I = 0;
 	setVel2(-turningSpeed,turningSpeed); //Vira à esquerda até encontrar a linha de novo
 	while(!detectedLineAhead()){ sensor = readLineSensors(0); }
 	led(4,0);
@@ -83,7 +82,7 @@ void invertDirection(){
 //**************************** Algoritmos para percorrer o labirinto ****************************
 /* Algoritmo para preencher a stack. Vai virar sempre à direita */
 void findBestPath(){
-	int finished = 0;
+	int finished = 0; //variavel que dará por terminado o jogo. Fica a 1 quando encontrou o objetivo
 	while(!finished && !stopButton()) {
 		sensor = readLineSensors(0);
 		switch(sensor){
