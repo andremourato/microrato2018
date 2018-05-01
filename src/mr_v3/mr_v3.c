@@ -10,16 +10,25 @@ void turnLeft();
 void invertDirection();
 //**************************** Variáveis do sistema ****************************
 volatile int millis = 0;
-//Constantes
+
+//PID
+
 //Proporionalidade
+double Kp = 3.5; //Contante de proporcionalidade. A melhor foi Kp = 3.5
+//Integral
+double Ki= 0.05; //a melhor foi Ki = 0.05
+int I = 0;
+int INTEGRAL_CAP = 50;
+//Derivada
 double prevError;
-double Kp = 3.5; //Contante de proporcionalidade
+
+//Constantes
 double ROBOT_DIAMETER = 0.120; //Em m
 double ROBOT_RADIUS;
 double MAX_SPEED =  0.15; //Em m/s
 // Velocidades
-int speed = 50; //Percentagem da velocidade máxima do motor. Velocidade em linha reta
-int turningSpeed = 40; //Velocidade a virar
+int speed = 45; //Percentagem da velocidade máxima do motor. Velocidade em linha reta
+int turningSpeed = 50; //Velocidade a virar
 volatile int sensor;
 //Delays
 int TIME_TO_CENTER; //Em ms. Tempo que demora a percorrer a distancia entre os sensores e o centro do robot
@@ -30,22 +39,27 @@ static int numTries = 0; //Não deve ser feito o reset desta variável
 
 //**************************** Funções auxiliares (sensores,etc.) ****************************
 double getRealSpeed(){ return speed*MAX_SPEED/100.0; } //a variavel speed é apenas a percentagem da velocidade máxima
-int detectedLineAhead(){return sensor == 0b00100 || sensor == 0b01110 || sensor == 0b01100 ||
-							   sensor == 0b01000 || sensor == 0b00110 || sensor == 0b00010;}
+int detectedLineAhead(){return sensor == 0b00100 || sensor == 0b01100 || sensor == 0b01000 ||
+							   sensor == 0b00110 || sensor == 0b00010;}
 void stopRobot(){ setVel2(0,0); }
 void resetAllVariables(){ stopRobot(); }
+//Calcula o PID
 void adjust(int error){  //Error pode ter os valores:-3, -2, -1, 0, 1, 2, 3
 	if(error == 3) error = prevError > 0 ? -3 : 3;
-	int leftSpeed = (int)(speed+Kp*(double)error);
-	int rightSpeed = (int)(speed-Kp*(double)error);
+	I += error;
+	I = I > INTEGRAL_CAP ? INTEGRAL_CAP : I;  //Não deixa o erro tornar-se muito grande
+	I = I < -INTEGRAL_CAP ? -INTEGRAL_CAP : I; //Não deixa o erro tornar-se muito pequeno
+	int leftSpeed = speed  + (int)(Kp*(double)error) + (int)((double)I*Ki);
+	int rightSpeed = speed - (int)(Kp*(double)error) - (int)((double)I*Ki);
 	setVel2(leftSpeed,rightSpeed);
-	//printf("Error=%d | %d | %d\n",error,leftSpeed,rightSpeed);
-	error = prevError;
+	prevError = error;
+	printf("I=%d\n",I);
+	printf("Error=%d | %d | %d\n",error,leftSpeed,rightSpeed);
 }
 void turnRight(){
 	led(2,1);
+	I = 0;
 	setVel2(turningSpeed,-turningSpeed);
-	//delay(TIME_TO_ROTATE_90);
 	millis = 0;
 	while(!detectedLineAhead()){ sensor = readLineSensors(0); }
 	printf("%d\n",millis);
@@ -53,15 +67,15 @@ void turnRight(){
 }
 void turnLeft(){
 	led(3,1);
+	I = 0;
 	setVel2(-turningSpeed,turningSpeed);
-	//delay(TIME_TO_ROTATE_90);
 	while(!detectedLineAhead()){ sensor = readLineSensors(0); }
 	led(3,0);
 }
 void invertDirection(){
 	led(4,1);
+	I = 0;
 	setVel2(-turningSpeed,turningSpeed); //Vira à esquerda até encontrar a linha de novo
-	//delay(TIME_TO_ROTATE_90);
 	while(!detectedLineAhead()){ sensor = readLineSensors(0); }
 	led(4,0);
 }
