@@ -17,9 +17,9 @@ double ROBOT_DIAMETER = 0.120; //Em m
 double ROBOT_RADIUS;
 double MAX_SPEED =  0.15; //Em m/s
 // Velocidades
-int speed = 42; //Percentagem da velocidade máxima do motor. Velocidade em linha reta
+int speed = 45; //Percentagem da velocidade máxima do motor. Velocidade em linha reta
 int adjust = 8; //Velocidade de ajuste. Vai ser somado a uma roda e subtraido à outra
-int turningSpeed = 35; //Velocidade a virar
+int turningSpeed = 40; //Velocidade a virar
 volatile int sensor;
 //Delays
 int TIME_TO_CENTER; //Em ms. Tempo que demora a percorrer a distancia entre os sensores e o centro do robot
@@ -40,7 +40,7 @@ void goForward(){ setVel2(speed,speed); }
 void turnRight(){
 	setVel2(turningSpeed,-turningSpeed);
 	delay(TIME_TO_ROTATE_90);
-	while(sensor != 0b01000 || sensor != 0b01100){ sensor = readLineSensors(0); }
+	while(!detectedLineAhead()){ sensor = readLineSensors(0); }
 }
 void turnLeft(){
 	setVel2(-turningSpeed,turningSpeed);
@@ -49,12 +49,11 @@ void turnLeft(){
 }
 void invertDirection(){
 	setVel2(-turningSpeed,turningSpeed); //Vira à esquerda até encontrar a linha de novo
-	int delaytime = TIME_TO_ROTATE_90*2;
-	delay(delaytime);
+	delay(TIME_TO_ROTATE_90);
 	while(!detectedLineAhead()){ sensor = readLineSensors(0); }
 }
 
-//**************************** Algoritmos para percorrer o labirinto ****************************«
+//**************************** Algoritmos para percorrer o labirinto ****************************
 /* Algoritmo para preencher a stack. Vai virar sempre à direita */
 void findBestPath(){
 	int finished = 0;
@@ -65,6 +64,9 @@ void findBestPath(){
 				case 0b00000:
 					invertDirection();
 					break;
+				//Caso detete biforcação ou meta
+				case 0b11111:
+					
 				//Deteta curva à direita
 				case 0b00001:
 				case 0b00011:
@@ -91,7 +93,7 @@ void findBestPath(){
 				case 0b11000:
 				case 0b11100:
 				case 0b11110:
-					turnLeft();
+					//turnLeft();
 					break;
 		}
 	}
@@ -110,8 +112,9 @@ void calculateVariables(); //Calcula os tempos de acordo com a velocidade
 
 int main(void)
 {
+
 	configureRobot(); //Configura o robot
-	waitingStart();
+	//waitingStart();
 	return 0;
 }
 
@@ -143,7 +146,7 @@ void configureRobot(){
 	configureTimer();
 	// Inicializacao da pic
 	initPIC32();
-	closedLoopControl(false); //Ativa a estabilização por PID
+	closedLoopControl(true); //Ativa a estabilização por PID
 	stopRobot();
 }
 
@@ -161,7 +164,7 @@ void configureTimer(){
 }
 
 void calculateVariables(){
-	TIME_TO_ROTATE_90 = 300; //Em ms. Por tentativa erro. Calcular, mais tarde
+	TIME_TO_ROTATE_90 = 450; //Em ms. Por tentativa erro. Calcular, mais tarde
 	ROBOT_RADIUS = ROBOT_DIAMETER/2.0;
 	TIME_TO_CENTER = 1000.0 * (ROBOT_RADIUS - 0.01) / getRealSpeed();
 }
