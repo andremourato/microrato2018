@@ -31,7 +31,7 @@ double ROBOT_DIAMETER = 0.120; //Em m
 double ROBOT_RADIUS;
 double MAX_SPEED =  0.15; //Em m/s
 // Velocidades
-int speed = 45; //Percentagem da velocidade máxima do motor. Velocidade em linha reta
+int speed = 60; //Percentagem da velocidade máxima do motor. Velocidade em linha reta
 int turningSpeed = 50; //Velocidade a virar
 volatile int sensor;
 //Delays
