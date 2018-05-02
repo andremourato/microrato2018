@@ -2,15 +2,21 @@
 
 #define ERROR_LEVEL_1 2 //Melhor: 2
 #define ERROR_LEVEL_2 3 //Melhor: 3
-#define NUMBER_OF_SAMPLES 10
+#define RIGHT_TURN_CONSTANT 5 //Valor máximo do contador. Vai depender da velocidade
+#define DEAD_END_CONSTANT 5 //É necessário calibrar estes valores
+
 //**************************** Funções auxiliares Declarações ****************************
+int leftDetected(); // 0 -> bit da esquerda está a 0 | 1 -> bit da esquerda está a 1
+int rightDetected(); // 0 -> bit da direita está a 0 | 1 -> bit da direita está a 1
+int deadEndDetected(); //0 -> quando existe pelo menos 1 bit ON | 1 -> quando todos os bits estao OFF
 double getRealSpeed();
 void stopRobot();
 void resetAllVariables();
-void adjust(int);
+void adjust();
 void turnRight();
 void turnLeft();
 void invertDirection();
+void updateSensorHistory();
 //**************************** Variáveis do sistema ****************************
 volatile int millis = 0;
 
@@ -34,27 +40,31 @@ double MAX_SPEED =  0.15; //Em m/s
 
 // Velocidades
 int speed = 70; //Percentagem da velocidade máxima do motor. Velocidade em linha reta
-int turningSpeed = 50; //Velocidade a virar
+int turningSpeed = 40; //Velocidade a virar
 
 //Histórico de medidas
 volatile int sensor;
-int sensorHistory[N];
+//Contadores. São limitados inferiormente a 0, i.e., counter >= 0
+int rightCounter = 0;
+int leftCounter = 0;
+int deadEndCounter = 0;
 
 //Informação sobre o estado do jogo
 //Número de tentativas. Incrementado no final de cada tentativa
 static int numTries = 0; //Não deve ser feito o reset desta variável
 
 //**************************** Funções auxiliares (sensores,etc.) ****************************
+int rightDetected(){ return sensor & 0x1; }
+int leftDetected(){ return sensor >> 4; }
+int deadEndDetected(){ return sensor == 0; }
 double getRealSpeed(){ return speed*MAX_SPEED/100.0; } //a variavel speed é apenas a percentagem da velocidade máxima
 int detectedLineAhead(){return sensor == 0b00100 || sensor == 0b01100 || sensor == 0b01000 ||
 							   sensor == 0b00110 || sensor == 0b00010;}
 void stopRobot(){ setVel2(0,0); }
 void resetAllVariables(){ stopRobot(); }
 //Calcula o PID
-void adjust(int sensorValue){
-	int middleSensors = (sensorValue & 0x0E) >> 1; //Gets the values of the 3 middle sensors
-	//printInt(middleSensors,2 | (3 << 16));
-	//printf("\n");
+void adjust(){
+	int middleSensors = (sensor & 0x0E) >> 1; //Gets the values of the 3 middle sensors
 	int error = 0;
 	switch(middleSensors){
 		case 0b100: error = errorTable[0]; break;
@@ -88,6 +98,18 @@ void invertDirection(){
 	while(!detectedLineAhead()){ sensor = readLineSensors(0); }
 	led(4,0);
 }
+void updateSensorHistory(){
+	if(rightDetected()) rightCounter += 1;
+	else rightCounter -= 1;
+	rightCounter = rightCounter <= 0 ? 0 : rightCounter;
+	if(leftDetected()) leftCounter += 1;
+	else leftCounter -= 1;
+	leftCounter = leftCounter <= 0 ? 0 : leftCounter;
+	if(deadEndDetected()) deadEndCounter += 1;
+	else deadEndCounter -= 1;
+	deadEndCounter = deadEndCounter <= 0 ? 0 : deadEndCounter;
+	//printf("right = %d\n",rightCounter);
+}
 
 //**************************** Algoritmos para percorrer o labirinto ****************************
 /* Algoritmo para preencher a stack. Vai virar sempre à direita */
@@ -95,45 +117,13 @@ void findBestPath(){
 	int finished = 0; //variavel que dará por terminado o jogo. Fica a 1 quando encontrou o objetivo
 	while(!finished && !stopButton()) {
 		sensor = readLineSensors(0);
-		adjust(sensor);
-		/*switch(sensor){
-				//Deteta DEAD-END
-				case 0b00000:
-					invertDirection();
-					break;
-				//Caso detete biforcação ou meta
-				case 0b11111:
-				//Deteta curva à direita
-				case 0b00001:
-				case 0b00011:
-				case 0b00111:
-				case 0b01111:
-					turnRight();
-					break;
-				case 0b11000:
-				case 0b01000: //Está a fugir para a direita
-					adjust(-2);
-					break;
-				case 0b11100:
-				case 0b01100:
-					adjust(-1);
-					break;
-				case 0b10100:
-				case 0b11110:
-				case 0b00100:
-					adjust(0);
-					break;
-				case 0b10110:
-				case 0b00110:
-					adjust(1);
-					break;
-				case 0b10010:
-				case 0b00010: //Está a fugir para a esquerda
-					adjust(2);
-					break;
-				case 0b01110: //Pode ter que compensar para a esquerda ou direita
-					adjust(3);
-		}*/
+		updateSensorHistory(); //Faz o update dos contadores
+		if(rightCounter >= RIGHT_TURN_CONSTANT) //Se estiver no centro, roda sobre si para a direita
+			turnRight();
+		else if(deadEndCounter >= DEAD_END_CONSTANT) //Se estiver no centro, inverte a marcha
+			invertDirection();
+		else	//Ajusta a rota caso esteja em linha reta
+			adjust();
 	}
 }
 
@@ -146,7 +136,7 @@ void run();
 void waitingStart();
 void configureRobot();
 void configureTimer();
-void calculateVariables(); //Calcula os tempos de acordo com a velocidade
+void initializeVariables(); //Calcula os tempos de acordo com a velocidade
 
 int main(void)
 {
@@ -177,7 +167,7 @@ void waitingStart(){
 /*Configurações do robot*/
 void configureRobot(){
 	//Calcula variaveis: tempos,etc.
-	calculateVariables();
+	initializeVariables();
 	// Configuracao dos leds
 	TRISE = TRISE & 0xFFF0;
 	//Configura o timer
@@ -201,7 +191,8 @@ void configureTimer(){
    	IEC0bits.T1IE = 1; 	 //Enables interrupts
 }
 
-void calculateVariables(){
+/* Usada para inicializar variaveis antes de começar */
+void initializeVariables(){
 
 }
 
@@ -211,6 +202,3 @@ void _int_(4) isr_T1() {
 	IFS0bits.T1IF = 0;
 
 }
-
-
-
