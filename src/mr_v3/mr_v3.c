@@ -2,6 +2,7 @@
 
 #define ERROR_LEVEL_1 2 //Melhor: 2
 #define ERROR_LEVEL_2 3 //Melhor: 3
+#define NUMBER_OF_SAMPLES 10
 //**************************** Funções auxiliares Declarações ****************************
 double getRealSpeed();
 void stopRobot();
@@ -30,10 +31,15 @@ double prevError;
 double ROBOT_DIAMETER = 0.120; //Em m
 double ROBOT_RADIUS;
 double MAX_SPEED =  0.15; //Em m/s
+
 // Velocidades
 int speed = 70; //Percentagem da velocidade máxima do motor. Velocidade em linha reta
 int turningSpeed = 50; //Velocidade a virar
+
+//Histórico de medidas
 volatile int sensor;
+int sensorHistory[N];
+
 //Informação sobre o estado do jogo
 //Número de tentativas. Incrementado no final de cada tentativa
 static int numTries = 0; //Não deve ser feito o reset desta variável
@@ -62,7 +68,7 @@ void adjust(int sensorValue){
 	int rightSpeed = speed - (int)(Kp*(double)error) - (int)((double)D*Kd);
 	setVel2(leftSpeed,rightSpeed);
 	prevError = error;
-	printf("Error=%d | %d | %d\n",error,leftSpeed,rightSpeed);
+	//printf("Error=%d | %d | %d\n",error,leftSpeed,rightSpeed);
 }
 void turnRight(){
 	led(2,1);
