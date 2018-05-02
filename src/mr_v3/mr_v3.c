@@ -1,10 +1,13 @@
 #include "mr32.h"
 
+#define ERROR_LEVEL_1 2 //Melhor: 2
+#define ERROR_LEVEL_2 3 //Melhor: 3
+#define NUMBER_OF_SAMPLES 10
 //**************************** Funções auxiliares Declarações ****************************
 double getRealSpeed();
 void stopRobot();
 void resetAllVariables();
-void adjust(int error);
+void adjust(int);
 void turnRight();
 void turnLeft();
 void invertDirection();
@@ -15,14 +18,12 @@ volatile int millis = 0;
 /* Para calibrar Kp, Ki e Kd: calibra-se sempre de cima para baixo. Primeiro calibra-se
 o Kp com o Ki = 0 e o Kd = 0. Testem várias vezes com valores diferentes.
 Quando ele estiver bom, alterem o Ki e assim sucessivamente*/
+/*Melhor conjunto de constantes encontrado: Kp=1,Kd=26,ERROR_LEVEL_1=2,ERROR_LEVEL_2=3*/
 //Proporionalidade
-double Kp = 3.5; //Contante de proporcionalidade. A melhor foi Kp = 3.5
-//Integral
-double Ki = 0.00; //a melhor foi Ki = 0.05
-int I = 0;
-int INTEGRAL_CAP = 50;
+double Kp = 1; //Contante de proporcionalidade. A melhor foi Kp = 3
 //Derivada
-double Kd = 0;
+double errorTable[] = {-ERROR_LEVEL_2, -ERROR_LEVEL_1, 0, ERROR_LEVEL_1, ERROR_LEVEL_2};
+double Kd = 26; //Melhor: 26
 int D;
 double prevError;
 
@@ -30,13 +31,15 @@ double prevError;
 double ROBOT_DIAMETER = 0.120; //Em m
 double ROBOT_RADIUS;
 double MAX_SPEED =  0.15; //Em m/s
+
 // Velocidades
-int speed = 60; //Percentagem da velocidade máxima do motor. Velocidade em linha reta
+int speed = 70; //Percentagem da velocidade máxima do motor. Velocidade em linha reta
 int turningSpeed = 50; //Velocidade a virar
+
+//Histórico de medidas
 volatile int sensor;
-//Delays
-int TIME_TO_CENTER; //Em ms. Tempo que demora a percorrer a distancia entre os sensores e o centro do robot
-int TIME_TO_ROTATE_90;
+int sensorHistory[N];
+
 //Informação sobre o estado do jogo
 //Número de tentativas. Incrementado no final de cada tentativa
 static int numTries = 0; //Não deve ser feito o reset desta variável
@@ -48,14 +51,21 @@ int detectedLineAhead(){return sensor == 0b00100 || sensor == 0b01100 || sensor 
 void stopRobot(){ setVel2(0,0); }
 void resetAllVariables(){ stopRobot(); }
 //Calcula o PID
-void adjust(int error){  //Error pode ter os valores:-3, -2, -1, 0, 1, 2, 3
-	if(error == 3) error = prevError > 0 ? -3 : 3;
-	I += error;
-	I = I > INTEGRAL_CAP ? INTEGRAL_CAP : I;  //Não deixa o erro tornar-se muito grande
-	I = I < -INTEGRAL_CAP ? -INTEGRAL_CAP : I; //Não deixa o erro tornar-se muito pequeno
+void adjust(int sensorValue){
+	int middleSensors = (sensorValue & 0x0E) >> 1; //Gets the values of the 3 middle sensors
+	//printInt(middleSensors,2 | (3 << 16));
+	//printf("\n");
+	int error = 0;
+	switch(middleSensors){
+		case 0b100: error = errorTable[0]; break;
+		case 0b110: error = errorTable[1]; break;
+		case 0b010: error = errorTable[2]; break;
+		case 0b011: error = errorTable[3]; break;
+		case 0b001: error = errorTable[4]; break;
+	}
 	D = error-prevError;
-	int leftSpeed  = speed + (int)(Kp*(double)error) + (int)((double)I*Ki) + (int)((double)D*Kd);
-	int rightSpeed = speed - (int)(Kp*(double)error) - (int)((double)I*Ki) - (int)((double)D*Kd);
+	int leftSpeed  = speed + (int)(Kp*(double)error) + (int)((double)D*Kd);
+	int rightSpeed = speed - (int)(Kp*(double)error) - (int)((double)D*Kd);
 	setVel2(leftSpeed,rightSpeed);
 	prevError = error;
 	//printf("Error=%d | %d | %d\n",error,leftSpeed,rightSpeed);
@@ -85,7 +95,8 @@ void findBestPath(){
 	int finished = 0; //variavel que dará por terminado o jogo. Fica a 1 quando encontrou o objetivo
 	while(!finished && !stopButton()) {
 		sensor = readLineSensors(0);
-		switch(sensor){
+		adjust(sensor);
+		/*switch(sensor){
 				//Deteta DEAD-END
 				case 0b00000:
 					invertDirection();
@@ -122,7 +133,7 @@ void findBestPath(){
 					break;
 				case 0b01110: //Pode ter que compensar para a esquerda ou direita
 					adjust(3);
-		}
+		}*/
 	}
 }
 
@@ -191,9 +202,7 @@ void configureTimer(){
 }
 
 void calculateVariables(){
-	TIME_TO_ROTATE_90 = 300; //Em ms. Por tentativa erro. Calcular, mais tarde
-	ROBOT_RADIUS = ROBOT_DIAMETER/2.0;
-	TIME_TO_CENTER = 1000.0 * (ROBOT_RADIUS - 0.01) / getRealSpeed();
+
 }
 
 /*Atualiza o temporizador*/
