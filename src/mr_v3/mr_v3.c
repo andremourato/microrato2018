@@ -8,8 +8,8 @@ turningSpeed = 40
 TURNING_CONSTANT=RIGHT_TURN_CONSTANT=DEAD_END_CONSTANT=16
 ------------------------------------------------------------
 */
-#define ERROR_LEVEL_1 2 //Melhor: 2
-#define ERROR_LEVEL_2 3 //Melhor: 3
+#define ERROR_LEVEL_1 1 //Melhor: 2
+#define ERROR_LEVEL_2 8.5 //Melhor: 3
 #define TURNING_CONSTANT 2
 #define RIGHT_TURN_CONSTANT TURNING_CONSTANT //Valor máximo do contador. Vai depender da velocidade
 #define DEAD_END_CONSTANT TURNING_CONSTANT //É necessário calibrar estes valores
@@ -38,10 +38,10 @@ Quando ele estiver bom, alterem o Ki e assim sucessivamente*/
 // Para speed = 70 : Kp=1,Kd=26,ERROR_LEVEL_1=2,ERROR_LEVEL_2=3
 // Para speed = 50 : Kp=1.5,Kd=10,ERROR_LEVEL_1=2,ERROR_LEVEL_2=3
 //Proporionalidade
-double Kp = 1.5; //Contante de proporcionalidade. A melhor foi Kp = 3
+double Kp = 2; //Contante de proporcionalidade. A melhor foi Kp = 3
 //Derivada
 double errorTable[] = {-ERROR_LEVEL_2, -ERROR_LEVEL_1, 0, ERROR_LEVEL_1, ERROR_LEVEL_2};
-double Kd = 10; //Melhor: 26
+double Kd = 28; //Melhor: 26
 int D;
 double prevError;
 
@@ -51,8 +51,8 @@ double ROBOT_RADIUS;
 double MAX_SPEED =  0.15; //Em m/s
 
 // Velocidades
-int speed = 60; //ercentagem da velocidade máxima do motor. Velocidade em linha reta
-int turningSpeed = 45; //Velocidade a virar.
+int speed = 50; //ercentagem da velocidade máxima do motor. Velocidade em linha reta
+int turningSpeed = 40; //Velocidade a virar.
 
 //Histórico de medidas
 volatile int sensor;
@@ -84,12 +84,17 @@ void resetAllVariables(){ stopRobot(); }
 void adjust(){
 	int middleSensors = (sensor & 0x0E) >> 1; //Gets the values of the 3 middle sensors
 	int error = 0;
-	switch(middleSensors){
-		case 0b100: error = errorTable[0]; break;
-		case 0b110: error = errorTable[1]; break;
-		case 0b010: error = errorTable[2]; break;
-		case 0b011: error = errorTable[3]; break;
-		case 0b001: error = errorTable[4]; break;
+	if(sensorGet(0)){
+		if(sensorGet(3)) error = errorTable[1];
+		else error = errorTable[3];
+	}else{
+		switch(middleSensors){
+			case 0b100: error = errorTable[0]; break;
+			case 0b110: error = errorTable[1]; break;
+			case 0b010: error = errorTable[2]; break;
+			case 0b011: error = errorTable[3]; break;
+			case 0b001: error = errorTable[4]; break;
+		}
 	}
 	D = error-prevError;
 	int leftSpeed  = speed + (int)(Kp*(double)error) + (int)((double)D*Kd);
@@ -124,7 +129,7 @@ void invertDirection(){
 /* Algoritmo para preencher a stack. Vai virar sempre à direita */
 void findBestPath(){
 
-	const static int countAim = 5;
+	const static int countAim = 6;
 	static int countR, countL, countC = 0;
 	static int turnDetected = 0;
 	
@@ -142,7 +147,7 @@ void findBestPath(){
 			if((sensor & 0x11) == 0) {
 			
 				// FUNCAO PARA DETETAR O QUE E A FAZER
-				if((countR >= 10) && (countL >= 10)) {
+				if((countR >= 15) && (countL >= 15)) {
 					setVel2(0,0);
 					while(1);
 				} else if((countR >= countAim) && (countL >= countAim)) {
