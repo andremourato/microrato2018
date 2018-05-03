@@ -36,11 +36,13 @@ volatile int millis = 0;
 o Kp com o Ki = 0 e o Kd = 0. Testem várias vezes com valores diferentes.
 Quando ele estiver bom, alterem o Ki e assim sucessivamente*/
 /*Melhor conjunto de constantes encontrado: Kp=1,Kd=26,ERROR_LEVEL_1=2,ERROR_LEVEL_2=3*/
+// Para speed = 70 : Kp=1,Kd=26,ERROR_LEVEL_1=2,ERROR_LEVEL_2=3
+// Para speed = 50 : Kp=1.5,Kd=10,ERROR_LEVEL_1=2,ERROR_LEVEL_2=3
 //Proporionalidade
-double Kp = 1; //Contante de proporcionalidade. A melhor foi Kp = 3
+double Kp = 1.5; //Contante de proporcionalidade. A melhor foi Kp = 3
 //Derivada
 double errorTable[] = {-ERROR_LEVEL_2, -ERROR_LEVEL_1, 0, ERROR_LEVEL_1, ERROR_LEVEL_2};
-double Kd = 26; //Melhor: 26
+double Kd = 10; //Melhor: 26
 int D;
 double prevError;
 
@@ -50,8 +52,8 @@ double ROBOT_RADIUS;
 double MAX_SPEED =  0.15; //Em m/s
 
 // Velocidades
-int speed = 50; //Percentagem da velocidade máxima do motor. Velocidade em linha reta
-int turningSpeed = 38; //Velocidade a virar.
+int speed = 60; //ercentagem da velocidade máxima do motor. Velocidade em linha reta
+int turningSpeed = 45; //Velocidade a virar.
 
 //Histórico de medidas
 volatile int sensor;
@@ -95,23 +97,28 @@ void adjust(){
 	int rightSpeed = speed - (int)(Kp*(double)error) - (int)((double)D*Kd);
 	setVel2(leftSpeed,rightSpeed);
 	prevError = error;
-	//printf("Error=%d | %d | %d\n",error,leftSpeed,rightSpeed);
+	printf("Error=%d | %d | %d\n",error,leftSpeed,rightSpeed);
 }
 void turnRight(){
 	led(2,1);
 	setVel2(turningSpeed,-turningSpeed);
+	while(!sensorGet(4)) {readSensors();}	
 	while(!detectedLineAhead()){ readSensors(); }
 	led(2,0);
 }
 void turnLeft(){
 	led(3,1);
 	setVel2(-turningSpeed,turningSpeed);
+	while(!sensorGet(0)) {readSensors();}
+	setVel2(-38,38);
 	while(!detectedLineAhead()){ readSensors(); }
 	led(3,0);
 }
 void invertDirection(){
 	led(4,1);
 	setVel2(-turningSpeed,turningSpeed); //Vira à esquerda até encontrar a linha de novo
+	while(!sensorGet(0)) {readSensors();}
+	setVel2(-38,38);
 	while(!detectedLineAhead()){ readSensors(); }
 	led(4,0);
 }
@@ -131,17 +138,69 @@ void updateSensorHistory(){
 //**************************** Algoritmos para percorrer o labirinto ****************************
 /* Algoritmo para preencher a stack. Vai virar sempre à direita */
 void findBestPath(){
+
+	const static int countAim = 5;
+	static int countR, countL, countC = 0;
+	static int turnDetected = 0;
+	
+	while(!stopButton()) {
+
+		readSensors();
+		adjust();
+		//printInt(sensor, 2 | 5 << 16);
+		//printf("\n");
+
+		if(!turnDetected && ((sensor & 0x11) != 0)) turnDetected = 1;
+
+		if(turnDetected) {
+
+			if((sensor & 0x11) == 0) {
+			
+				// FUNCAO PARA DETETAR O QUE E A FAZER
+				if((countR >= 10) && (countL >= 10)) {
+					setVel2(0,0);
+					while(1);
+				} else if((countR >= countAim) && (countL >= countAim)) {
+					turnRight();
+					// CONDICOES STACK
+				} else if((countR >= countAim) && (countL < countAim)) {
+					turnRight();
+					// CONDICOES STACK
+				} else if((countL >= countAim) && (countR < countAim)) {
+					if((sensor & 0x0E) == 0) turnLeft(); 
+					// CONDICOES STACK
+				}
+
+				countL = 0; countR = 0; countC = 0;
+				turnDetected = 0;
+
+			} else {
+				if((sensor & 0x10) != 0) countL++;
+				if((sensor & 0x01) != 0) countR++;
+				if((sensor & 0xE0) != 0) countC++;
+			}
+
+		} else if(sensor == 0) {
+			invertDirection();
+		}
+
+	}
+	
+	/*
 	int finished = 0; //variavel que dará por terminado o jogo. Fica a 1 quando encontrou o objetivo
 	while(!finished && !stopButton()) {
 		readSensors();
+		
 		updateSensorHistory(); //Faz o update dos contadores
 		if(rightCounter >= RIGHT_TURN_CONSTANT) //Se estiver no centro, roda sobre si para a direita
 			turnRight();
 		else if(deadEndCounter >= DEAD_END_CONSTANT) //Se estiver no centro, inverte a marcha
 			invertDirection();
 		else	//Ajusta a rota caso esteja em linha reta
+		
 			adjust();
 	}
+	*/
 }
 
 //**************************** Funções para controlar o estado do robot ****************************
@@ -203,9 +262,8 @@ void configureTimer(){
 	TMR1 = 0;            		// Reset timer T2 count register
 	T1CONbits.TON = 1;   		// Enable timer T2 (must be the last command of
 	IPC1bits.T1IP = 2;   // Interrupt priority (must be in range [1..6]) 
-   	IEC0bits.T1IE = 0;   // Disable timer T2 interrupts 
    	IFS0bits.T1IF = 0;   // Reset timer T2 interrupt flag
-   	IEC0bits.T1IE = 1; 	 //Enables interrupts
+   	IEC0bits.T1IE = 1;   //Enables interrupts
 }
 
 /* Usada para inicializar variaveis antes de começar */
