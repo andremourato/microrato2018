@@ -1,15 +1,17 @@
 #include "mr32.h"
 
 /*
-* MELHORES RATIOS PARA VELOCIDADES:
+* MELHORES RATIOS PARA VELOCIDADES (Fazem o percurso todo):
 ------------------------------------------------------------
-speed = 40
-turningSpeed = 40
-TURNING_CONSTANT=RIGHT_TURN_CONSTANT=DEAD_END_CONSTANT=16
+speed = 50
+Kp = 2
+Kd = 28
+ERROR_LEVEL_1 = 1
+ERROR_LEVEL_2 = 8.5
 ------------------------------------------------------------
 */
-#define ERROR_LEVEL_1 1 //Melhor: 2
-#define ERROR_LEVEL_2 8.5 //Melhor: 3
+#define ERROR_LEVEL_1 1
+#define ERROR_LEVEL_2 8.5
 #define TURNING_CONSTANT 2
 #define RIGHT_TURN_CONSTANT TURNING_CONSTANT //Valor máximo do contador. Vai depender da velocidade
 #define DEAD_END_CONSTANT TURNING_CONSTANT //É necessário calibrar estes valores
@@ -34,14 +36,13 @@ volatile int millis = 0;
 /* Para calibrar Kp, Ki e Kd: calibra-se sempre de cima para baixo. Primeiro calibra-se
 o Kp com o Ki = 0 e o Kd = 0. Testem várias vezes com valores diferentes.
 Quando ele estiver bom, alterem o Ki e assim sucessivamente*/
-/*Melhor conjunto de constantes encontrado: Kp=1,Kd=26,ERROR_LEVEL_1=2,ERROR_LEVEL_2=3*/
-// Para speed = 70 : Kp=1,Kd=26,ERROR_LEVEL_1=2,ERROR_LEVEL_2=3
-// Para speed = 50 : Kp=1.5,Kd=10,ERROR_LEVEL_1=2,ERROR_LEVEL_2=3
+/*Melhor conjunto de constantes encontrado:
+*/
 //Proporionalidade
-double Kp = 2; //Contante de proporcionalidade. A melhor foi Kp = 3
+double Kp = 2; //Contante de proporcionalidade
 //Derivada
 double errorTable[] = {-ERROR_LEVEL_2, -ERROR_LEVEL_1, 0, ERROR_LEVEL_1, ERROR_LEVEL_2};
-double Kd = 28; //Melhor: 26
+double Kd = 28;
 int D;
 double prevError;
 
@@ -175,22 +176,6 @@ void findBestPath(){
 		}
 
 	}
-	
-	/*
-	int finished = 0; //variavel que dará por terminado o jogo. Fica a 1 quando encontrou o objetivo
-	while(!finished && !stopButton()) {
-		readSensors();
-		
-		updateSensorCounter(); //Faz o update dos contadores
-		if(rightCounter >= RIGHT_TURN_CONSTANT) //Se estiver no centro, roda sobre si para a direita
-			turnRight();
-		else if(deadEndCounter >= DEAD_END_CONSTANT) //Se estiver no centro, inverte a marcha
-			invertDirection();
-		else	//Ajusta a rota caso esteja em linha reta
-		
-			adjust();
-	}
-	*/
 }
 
 //**************************** Funções para controlar o estado do robot ****************************
