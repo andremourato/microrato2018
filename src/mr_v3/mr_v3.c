@@ -27,7 +27,6 @@ void adjust();
 void turnRight();
 void turnLeft();
 void invertDirection();
-void updateSensorHistory();
 //**************************** Variáveis do sistema ****************************
 volatile int millis = 0;
 
@@ -110,7 +109,6 @@ void turnLeft(){
 	led(3,1);
 	setVel2(-turningSpeed,turningSpeed);
 	while(!sensorGet(0)) {readSensors();}
-	setVel2(-38,38);
 	while(!detectedLineAhead()){ readSensors(); }
 	led(3,0);
 }
@@ -118,21 +116,8 @@ void invertDirection(){
 	led(4,1);
 	setVel2(-turningSpeed,turningSpeed); //Vira à esquerda até encontrar a linha de novo
 	while(!sensorGet(0)) {readSensors();}
-	setVel2(-38,38);
 	while(!detectedLineAhead()){ readSensors(); }
 	led(4,0);
-}
-void updateSensorHistory(){
-	if(rightDetected()) rightCounter += 1;
-	else rightCounter -= 1;
-	rightCounter = rightCounter <= 0 ? 0 : rightCounter;
-	if(leftDetected()) leftCounter += 1;
-	else leftCounter -= 1;
-	leftCounter = leftCounter <= 0 ? 0 : leftCounter;
-	if(deadEndDetected()) deadEndCounter += 1;
-	else deadEndCounter -= 1;
-	deadEndCounter = deadEndCounter <= 0 ? 0 : deadEndCounter;
-	printf("left = %d\n",leftCounter);
 }
 
 //**************************** Algoritmos para percorrer o labirinto ****************************
@@ -191,7 +176,7 @@ void findBestPath(){
 	while(!finished && !stopButton()) {
 		readSensors();
 		
-		updateSensorHistory(); //Faz o update dos contadores
+		updateSensorCounter(); //Faz o update dos contadores
 		if(rightCounter >= RIGHT_TURN_CONSTANT) //Se estiver no centro, roda sobre si para a direita
 			turnRight();
 		else if(deadEndCounter >= DEAD_END_CONSTANT) //Se estiver no centro, inverte a marcha
