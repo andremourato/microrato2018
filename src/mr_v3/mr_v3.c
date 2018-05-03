@@ -1,14 +1,25 @@
 #include "mr32.h"
 
+/*
+* MELHORES RATIOS PARA VELOCIDADES:
+------------------------------------------------------------
+speed = 40
+turningSpeed = 40
+TURNING_CONSTANT=RIGHT_TURN_CONSTANT=DEAD_END_CONSTANT=16
+------------------------------------------------------------
+*/
 #define ERROR_LEVEL_1 2 //Melhor: 2
 #define ERROR_LEVEL_2 3 //Melhor: 3
-#define RIGHT_TURN_CONSTANT 5 //Valor máximo do contador. Vai depender da velocidade
-#define DEAD_END_CONSTANT 5 //É necessário calibrar estes valores
+#define TURNING_CONSTANT 2
+#define RIGHT_TURN_CONSTANT TURNING_CONSTANT //Valor máximo do contador. Vai depender da velocidade
+#define DEAD_END_CONSTANT TURNING_CONSTANT //É necessário calibrar estes valores
 
 //**************************** Funções auxiliares Declarações ****************************
+int sensorGet(int i); //Devolve o valor do sensor de indice i. 0->sensor da esquerda, 1->sensor central da esquerda, ..., 4->sensor da direita
 int leftDetected(); // 0 -> bit da esquerda está a 0 | 1 -> bit da esquerda está a 1
 int rightDetected(); // 0 -> bit da direita está a 0 | 1 -> bit da direita está a 1
 int deadEndDetected(); //0 -> quando existe pelo menos 1 bit ON | 1 -> quando todos os bits estao OFF
+int detectedLineAhead();
 double getRealSpeed();
 void stopRobot();
 void resetAllVariables();
@@ -39,8 +50,8 @@ double ROBOT_RADIUS;
 double MAX_SPEED =  0.15; //Em m/s
 
 // Velocidades
-int speed = 70; //Percentagem da velocidade máxima do motor. Velocidade em linha reta
-int turningSpeed = 40; //Velocidade a virar
+int speed = 50; //Percentagem da velocidade máxima do motor. Velocidade em linha reta
+int turningSpeed = 38; //Velocidade a virar.
 
 //Histórico de medidas
 volatile int sensor;
@@ -54,12 +65,18 @@ int deadEndCounter = 0;
 static int numTries = 0; //Não deve ser feito o reset desta variável
 
 //**************************** Funções auxiliares (sensores,etc.) ****************************
-int rightDetected(){ return sensor & 0x1; }
-int leftDetected(){ return sensor >> 4; }
+/* 0 <= i <= 4*/
+int sensorGet(int i){
+	return (sensor >> (4-i)) & 0x01;
+}
+void readSensors(){
+	sensor = readLineSensors(0);
+}
+int rightDetected(){ return sensorGet(4); }
+int leftDetected(){ return sensorGet(0); }
 int deadEndDetected(){ return sensor == 0; }
 double getRealSpeed(){ return speed*MAX_SPEED/100.0; } //a variavel speed é apenas a percentagem da velocidade máxima
-int detectedLineAhead(){return sensor == 0b00100 || sensor == 0b01100 || sensor == 0b01000 ||
-							   sensor == 0b00110 || sensor == 0b00010;}
+int detectedLineAhead(){ return (sensorGet(1) || sensorGet(2) || sensorGet(3)) && (!sensorGet(0) && !sensorGet(4)); }
 void stopRobot(){ setVel2(0,0); }
 void resetAllVariables(){ stopRobot(); }
 //Calcula o PID
@@ -83,19 +100,19 @@ void adjust(){
 void turnRight(){
 	led(2,1);
 	setVel2(turningSpeed,-turningSpeed);
-	while(!detectedLineAhead()){ sensor = readLineSensors(0); }
+	while(!detectedLineAhead()){ readSensors(); }
 	led(2,0);
 }
 void turnLeft(){
 	led(3,1);
 	setVel2(-turningSpeed,turningSpeed);
-	while(!detectedLineAhead()){ sensor = readLineSensors(0); }
+	while(!detectedLineAhead()){ readSensors(); }
 	led(3,0);
 }
 void invertDirection(){
 	led(4,1);
 	setVel2(-turningSpeed,turningSpeed); //Vira à esquerda até encontrar a linha de novo
-	while(!detectedLineAhead()){ sensor = readLineSensors(0); }
+	while(!detectedLineAhead()){ readSensors(); }
 	led(4,0);
 }
 void updateSensorHistory(){
@@ -108,7 +125,7 @@ void updateSensorHistory(){
 	if(deadEndDetected()) deadEndCounter += 1;
 	else deadEndCounter -= 1;
 	deadEndCounter = deadEndCounter <= 0 ? 0 : deadEndCounter;
-	//printf("right = %d\n",rightCounter);
+	printf("left = %d\n",leftCounter);
 }
 
 //**************************** Algoritmos para percorrer o labirinto ****************************
@@ -116,7 +133,7 @@ void updateSensorHistory(){
 void findBestPath(){
 	int finished = 0; //variavel que dará por terminado o jogo. Fica a 1 quando encontrou o objetivo
 	while(!finished && !stopButton()) {
-		sensor = readLineSensors(0);
+		readSensors();
 		updateSensorHistory(); //Faz o update dos contadores
 		if(rightCounter >= RIGHT_TURN_CONSTANT) //Se estiver no centro, roda sobre si para a direita
 			turnRight();
