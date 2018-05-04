@@ -11,7 +11,7 @@ ERROR_LEVEL_2 = 8.5
 ------------------------------------------------------------
 */
 #define ERROR_LEVEL_1 1
-#define ERROR_LEVEL_2 15
+#define ERROR_LEVEL_2 8
 #define TURNING_CONSTANT 2
 #define RIGHT_TURN_CONSTANT TURNING_CONSTANT //Valor máximo do contador. Vai depender da velocidade
 #define DEAD_END_CONSTANT TURNING_CONSTANT //É necessário calibrar estes valores
@@ -59,10 +59,10 @@ Quando ele estiver bom, alterem o Ki e assim sucessivamente*/
 /*Melhor conjunto de constantes encontrado:
 */
 //Proporionalidade
-double Kp = 2; //Contante de proporcionalidade
+double Kp = 1.75; //Contante de proporcionalidade
 //Derivada
 double errorTable[] = {-ERROR_LEVEL_2, -ERROR_LEVEL_1, 0, ERROR_LEVEL_1, ERROR_LEVEL_2};
-double Kd = 22.5;
+double Kd = 15;
 int D;
 double prevError;
 //Constantes
@@ -70,7 +70,7 @@ double ROBOT_DIAMETER = 0.120; //Em m
 double ROBOT_RADIUS;
 double MAX_SPEED =  0.15; //Em m/s
 // Velocidades
-int speed = 50; //ercentagem da velocidade máxima do motor. Velocidade em linha reta
+int speed = 55; //ercentagem da velocidade máxima do motor. Velocidade em linha reta
 int turningSpeed = 45; //Velocidade a virar.
 //Histórico de medidas
 volatile int sensor;
@@ -175,7 +175,7 @@ void findBestPath(){
 			if((sensor & 0x11) == 0) {
 			
 				// FUNCAO PARA DETETAR O QUE E A FAZER
-				if((countR >= 15) && (countL >= 15)) {
+				if((countC >= 25) && ((countR >= 25) || (countL >= 25))) {
 					setVel2(0,0);
 					while(1);
 				} else if((countR >= countAim) && (countL >= countAim)) {
