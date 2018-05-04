@@ -11,7 +11,7 @@ ERROR_LEVEL_2 = 8.5
 ------------------------------------------------------------
 */
 #define ERROR_LEVEL_1 1
-#define ERROR_LEVEL_2 3
+#define ERROR_LEVEL_2 3.25
 #define TURNING_CONSTANT 2
 #define GOAL_CONSTANT 15
 #define RIGHT_TURN_CONSTANT TURNING_CONSTANT //Valor máximo do contador. Vai depender da velocidade
@@ -67,7 +67,7 @@ Quando ele estiver bom, alterem o Ki e assim sucessivamente*/
 double Kp = 14; //Contante de proporcionalidade
 //Derivada
 double errorTable[] = {-ERROR_LEVEL_2, -ERROR_LEVEL_1, 0, ERROR_LEVEL_1, ERROR_LEVEL_2};
-double Kd = 100;
+double Kd = 120;
 int D;
 double prevError;
 //Constantes
@@ -79,10 +79,6 @@ int speed = 65; //ercentagem da velocidade máxima do motor. Velocidade em linha
 int turningSpeed = 40; //Velocidade a virar.
 //Histórico de medidas
 volatile int sensor;
-//Contadores. São limitados inferiormente a 0, i.e., counter >= 0
-int rightCounter = 0;
-int leftCounter = 0;
-int deadEndCounter = 0;
 int isInverted = 0;
 
 /********************************* LÓGICA *********************************/
@@ -105,7 +101,7 @@ int deadEndDetected(){ return sensor == 0; }
 double getRealSpeed(){ return speed*MAX_SPEED/100.0; } //a variavel speed é apenas a percentagem da velocidade máxima
 int detectedLineAhead(){ return (sensorGet(1) || sensorGet(2) || sensorGet(3)) && (!sensorGet(0) && !sensorGet(4)); }
 void stopRobot(){ setVel2(0,0); }
-void resetAllVariables(){ stopRobot(); }
+void resetAllVariables() {stopRobot();}
 //Calcula o PID
 void adjust(){
 	int middleSensors = (sensor & 0x0E) >> 1; //Gets the values of the 3 middle sensors
@@ -155,36 +151,32 @@ void invertDirection(){
 
 //**************************** Algoritmos para percorrer o labirinto ****************************
 /* Segue as indicações da stack. Assume que esta já está preenchida */
-void chooseBestPath(){
-	int stackIndex = 0;
-	while(!stopButton()){
-		readSensors();
-		adjust();
-		if(turnDetected()){
-			int nextMove = idStack[stackIndex++];
-			switch(nextMove){
-				case R: //vira à direita
-					turnRight();
-					break;
-				case L: //vira à esquerda
-					turnLeft();
-					break;
-				case S: //vai em frente
-					break;
-			}
-		}
+void chooseBestPath(stackIndex){
+	int nextMove = idStack[stackIndex++];
+	switch(nextMove){
+		case R: //vira à direita
+			turnRight();
+			break;
+		case L: //vira à esquerda
+			turnLeft();
+			break;
+		case S: //vai em frente
+			break;
 	}
 }
 
 /* Algoritmo para preencher a idStack. Vai virar sempre à direita */
 void findBestPath(){
 
-	const static int countAim = 6;
-	static int countR, countL, countC = 0;
-	static int turnDetected = 0;
+	const int countAim = 6;
+	int countR = 0, countL = 0, countC = 0;
+	int turnDetected = 0;
+	int stackIndex = 0;
+	int chooseFromStack = 0;
+	if(!idStackTopIsEmpty()) chooseFromStack = 1; 
 
 	while(!stopButton()) {
-		//printf("idPeek = %d | branchPeek = %d\n",idStackPeek(),branchStackPeek());
+
 		readSensors();
 		adjust();
 		//printInt(sensor, 2 | 5 << 16);
@@ -195,8 +187,9 @@ void findBestPath(){
 		if(turnDetected) {
 
 			if((sensor & 0x11) == 0) {
-
-				fillTheStack(countC,countR,countL,countAim);
+				if(stackIndex > idStackTop) chooseFromStack = 0;
+				if(chooseFromStack) chooseBestPath(stackIndex++);
+				else fillTheStack(countC,countR,countL,countAim);
 				countL = 0; countR = 0; countC = 0;
 				turnDetected = 0;
 			} else {
@@ -211,6 +204,9 @@ void findBestPath(){
 		}
 
 	}
+
+	waitingStart();
+
 }
 
 void fillTheStack(int countC, int countR, int countL, int countAim){
@@ -337,16 +333,13 @@ int main(void)
 
 /* Vai determinar se o robot já sabe o caminho mais curto ou não */
 void run(){
-	//Se for a primeira tentativa, ainda tem que encontrar o caminho
-	if(idStackTopIsEmpty())
-		findBestPath(); //Preenche a idStack
-	else
-		chooseBestPath();
+	findBestPath();
 }
 
 /*Enquanto o botao start nao for premido, fica à espera*/
 void waitingStart(){
 	resetAllVariables();
+	printf("-----------------------------------------------------");
 	while(!startButton()); //Enquanto o botão start nao for premido
 	run(); //Executa uma nova tentativa
 }
