@@ -15,6 +15,10 @@ ERROR_LEVEL_2 = 8.5
 #define TURNING_CONSTANT 2
 #define RIGHT_TURN_CONSTANT TURNING_CONSTANT //Valor máximo do contador. Vai depender da velocidade
 #define DEAD_END_CONSTANT TURNING_CONSTANT //É necessário calibrar estes valores
+//Identificadores
+#define R 1 //Curva à direita
+#define L 2 //Curva à esquerda
+#define S 3 //Segue em frente
 
 //**************************** Funções auxiliares Declarações ****************************
 int sensorGet(int i); //Devolve o valor do sensor de indice i. 0->sensor da esquerda, 1->sensor central da esquerda, ..., 4->sensor da direita
@@ -29,6 +33,22 @@ void adjust();
 void turnRight();
 void turnLeft();
 void invertDirection();
+/**************************** Stack related methods ***************************************/
+//Identificadores: { R, L, S }
+//ID Stack - stack que guarda os identificadores
+int idStackTopIsEmpty();
+int idStackIsFull();
+int idStackPeek();
+int idStackPop();
+void idStackPush(int data);
+void idStackPrint(); //USADO PARA DEBUG
+//STACK DO NUMERO DE RAMOS POR INVESTIGAR
+int branchStackIsEmpty();
+int branchStackIsFull();
+int branchStackPeek();
+int branchStackPop();
+void branchStackPush(int data);
+void branchStackPrint(); //USADO PARA DEBUG
 //**************************** Variáveis do sistema ****************************
 volatile int millis = 0;
 
@@ -45,16 +65,13 @@ double errorTable[] = {-ERROR_LEVEL_2, -ERROR_LEVEL_1, 0, ERROR_LEVEL_1, ERROR_L
 double Kd = 28;
 int D;
 double prevError;
-
 //Constantes
 double ROBOT_DIAMETER = 0.120; //Em m
 double ROBOT_RADIUS;
 double MAX_SPEED =  0.15; //Em m/s
-
 // Velocidades
 int speed = 50; //ercentagem da velocidade máxima do motor. Velocidade em linha reta
 int turningSpeed = 40; //Velocidade a virar.
-
 //Histórico de medidas
 volatile int sensor;
 //Contadores. São limitados inferiormente a 0, i.e., counter >= 0
@@ -62,6 +79,14 @@ int rightCounter = 0;
 int leftCounter = 0;
 int deadEndCounter = 0;
 
+/********************************* LÓGICA *********************************/
+int STACK_MAXSIZE = 300;
+//STACK DO IDENTIFICADORES
+int idStack[300];     
+int idStackTop = -1;
+//STACK DO NUMERO DE RAMOS POR INVESTIGAR
+int branchStack[8];     
+int branchStackTop = -1;
 //Informação sobre o estado do jogo
 //Número de tentativas. Incrementado no final de cada tentativa
 static int numTries = 0; //Não deve ser feito o reset desta variável
@@ -127,7 +152,7 @@ void invertDirection(){
 }
 
 //**************************** Algoritmos para percorrer o labirinto ****************************
-/* Algoritmo para preencher a stack. Vai virar sempre à direita */
+/* Algoritmo para preencher a idStack. Vai virar sempre à direita */
 void findBestPath(){
 
 	const static int countAim = 6;
@@ -201,9 +226,9 @@ int main(void)
 void run(){
 	//Se for a primeira tentativa, ainda tem que encontrar o caminho
 	//if(numTries==0)
-		findBestPath(); //Preenche a stack
+		findBestPath(); //Preenche a idStack
 	//else //Caso contrario, vai percorrer o caminho mais curto
-		//chooseBestPath(); //Será descomentado mais tarde. Segue a stack
+		//chooseBestPath(); //Será descomentado mais tarde. Segue a idStack
 	numTries += 1;
 	waitingStart();
 }
@@ -251,4 +276,112 @@ void _int_(4) isr_T1() {
 	millis++;
 	IFS0bits.T1IF = 0;
 
+}
+
+/********************************** STACK RELATED METHODS ********************************/          
+//////////////////// ID STACK /////////////////////
+int idStackTopIsEmpty() {
+
+   if(idStackTop == -1)
+      return 1;
+   else
+      return 0;
+}
+   
+int idStackIsFull() {
+
+   if(idStackTop == STACK_MAXSIZE)
+      return 1;
+   else
+      return 0;
+}
+
+int idStackPeek() {
+   return idStack[idStackTop];
+}
+
+int idStackPop() {
+   int data;
+	
+   if(!idStackTopIsEmpty()) {
+      data = idStack[idStackTop];
+      idStackTop = idStackTop - 1;
+      return data;
+   } else {
+      printf("Could not retrieve data, Stack is empty.\n");
+   }
+   return -1;
+}
+
+void idStackPush(int data) {
+
+   if(!idStackIsFull()) {
+      idStackTop = idStackTop + 1;   
+      idStack[idStackTop] = data;
+   } else {
+      printf("Could not insert data, Stack is full.\n");
+   }
+}
+
+void idStackPrint(){
+	int i;
+	printf("----begin----\n");
+	for(i = 0; i <= idStackTop; i++){
+		printf("%d\n",idStack[i]);
+	}
+	printf("----end----\n");
+}
+
+//////////////////// BRANCH STACK /////////////////////
+
+int branchStackIsEmpty() {
+
+   if(branchStackTop == -1)
+      return 1;
+   else
+      return 0;
+}
+   
+int branchStackIsFull() {
+
+   if(branchStackTop == STACK_MAXSIZE)
+      return 1;
+   else
+      return 0;
+}
+
+int branchStackPeek() {
+   return branchStack[branchStackTop];
+}
+
+int branchStackPop() {
+   int data;
+	
+   if(!branchStackIsEmpty()) {
+      data = branchStack[branchStackTop];
+      branchStackTop = branchStackTop - 1;   
+      return data;
+   } else {
+      printf("Could not retrieve data, Stack is empty.\n");
+   }
+   return -1;
+}
+
+void branchStackPush(int data) {
+
+   if(!branchStackIsFull()) {
+      branchStackTop = branchStackTop + 1;   
+      branchStack[branchStackTop] = data;
+   } else {
+      printf("Could not insert data, Stack is full.\n");
+   }
+}
+
+void branchStackPrint(){
+	int i;
+	printf("----begin----\n");
+	for(i = 0; i <= branchStackTop; i++){
+		printf("%d\n",branchStack[i]);
+	}
+	printf("----end----\n");
 }
