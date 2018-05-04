@@ -11,7 +11,7 @@ ERROR_LEVEL_2 = 8.5
 ------------------------------------------------------------
 */
 #define ERROR_LEVEL_1 1
-#define ERROR_LEVEL_2 8.5
+#define ERROR_LEVEL_2 15
 #define TURNING_CONSTANT 2
 #define RIGHT_TURN_CONSTANT TURNING_CONSTANT //Valor máximo do contador. Vai depender da velocidade
 #define DEAD_END_CONSTANT TURNING_CONSTANT //É necessário calibrar estes valores
@@ -62,7 +62,7 @@ Quando ele estiver bom, alterem o Ki e assim sucessivamente*/
 double Kp = 2; //Contante de proporcionalidade
 //Derivada
 double errorTable[] = {-ERROR_LEVEL_2, -ERROR_LEVEL_1, 0, ERROR_LEVEL_1, ERROR_LEVEL_2};
-double Kd = 28;
+double Kd = 22.5;
 int D;
 double prevError;
 //Constantes
@@ -71,7 +71,7 @@ double ROBOT_RADIUS;
 double MAX_SPEED =  0.15; //Em m/s
 // Velocidades
 int speed = 50; //ercentagem da velocidade máxima do motor. Velocidade em linha reta
-int turningSpeed = 40; //Velocidade a virar.
+int turningSpeed = 45; //Velocidade a virar.
 //Histórico de medidas
 volatile int sensor;
 //Contadores. São limitados inferiormente a 0, i.e., counter >= 0
@@ -110,17 +110,12 @@ void resetAllVariables(){ stopRobot(); }
 void adjust(){
 	int middleSensors = (sensor & 0x0E) >> 1; //Gets the values of the 3 middle sensors
 	int error = 0;
-	if(sensorGet(0)){
-		if(sensorGet(3)) error = errorTable[1];
-		else error = errorTable[3];
-	}else{
-		switch(middleSensors){
-			case 0b100: error = errorTable[0]; break;
-			case 0b110: error = errorTable[1]; break;
-			case 0b010: error = errorTable[2]; break;
-			case 0b011: error = errorTable[3]; break;
-			case 0b001: error = errorTable[4]; break;
-		}
+	switch(middleSensors){
+		case 0b100: error = errorTable[0]; break;
+		case 0b110: error = errorTable[1]; break;
+		case 0b010: error = errorTable[2]; break;
+		case 0b011: error = errorTable[3]; break;
+		case 0b001: error = errorTable[4]; break;
 	}
 	D = error-prevError;
 	int leftSpeed  = speed + (int)(Kp*(double)error) + (int)((double)D*Kd);
@@ -134,6 +129,8 @@ void turnRight(){
 	setVel2(turningSpeed,-turningSpeed);
 	while(!sensorGet(4)) {readSensors();}	
 	while(!detectedLineAhead()){ readSensors(); }
+	setVel2(0,0);
+	delay(250);
 	led(2,0);
 }
 void turnLeft(){
@@ -141,13 +138,18 @@ void turnLeft(){
 	setVel2(-turningSpeed,turningSpeed);
 	while(!sensorGet(0)) {readSensors();}
 	while(!detectedLineAhead()){ readSensors(); }
+	setVel2(0,0);
+	delay(250);
 	led(3,0);
 }
 void invertDirection(){
 	led(4,1);
+	millis = 0;
 	setVel2(-turningSpeed,turningSpeed); //Vira à esquerda até encontrar a linha de novo
 	while(!sensorGet(0)) {readSensors();}
-	while(!detectedLineAhead()){ readSensors(); }
+	while(!detectedLineAhead() || millis < 850){ readSensors(); }
+	setVel2(0,0);
+	delay(1000);
 	led(4,0);
 }
 
