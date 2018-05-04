@@ -11,7 +11,7 @@ ERROR_LEVEL_2 = 8.5
 ------------------------------------------------------------
 */
 #define ERROR_LEVEL_1 1
-#define ERROR_LEVEL_2 8
+#define ERROR_LEVEL_2 2.5
 #define TURNING_CONSTANT 2
 #define RIGHT_TURN_CONSTANT TURNING_CONSTANT //Valor máximo do contador. Vai depender da velocidade
 #define DEAD_END_CONSTANT TURNING_CONSTANT //É necessário calibrar estes valores
@@ -53,6 +53,8 @@ void branchStackPrint(); //USADO PARA DEBUG
 //**************************** Variáveis do sistema ****************************
 volatile int millis = 0;
 
+int chooseBestPath = 0;
+
 //PID
 /* Para calibrar Kp, Ki e Kd: calibra-se sempre de cima para baixo. Primeiro calibra-se
 o Kp com o Ki = 0 e o Kd = 0. Testem várias vezes com valores diferentes.
@@ -60,10 +62,10 @@ Quando ele estiver bom, alterem o Ki e assim sucessivamente*/
 /*Melhor conjunto de constantes encontrado:
 */
 //Proporionalidade
-double Kp = 1.75; //Contante de proporcionalidade
+double Kp = 8; //Contante de proporcionalidade
 //Derivada
 double errorTable[] = {-ERROR_LEVEL_2, -ERROR_LEVEL_1, 0, ERROR_LEVEL_1, ERROR_LEVEL_2};
-double Kd = 15;
+double Kd = 47.5;
 int D;
 double prevError;
 //Constantes
@@ -162,6 +164,9 @@ void findBestPath(){
 	static int countR, countL, countC = 0;
 	static int turnDetected = 0;
 	static int isInverted = 0;
+	static int stackPointer = 0, chooseFromStack = 0;
+
+	if(idStackTop != 0) chooseFromStack = 1;
 
 	while(!stopButton()) {
 		printf("idPeek = %d | branchPeek = %d\n",idStackPeek(),branchStackPeek());
@@ -175,84 +180,92 @@ void findBestPath(){
 		if(turnDetected) {
 
 			if((sensor & 0x11) == 0) {
-			
-				// FUNCAO PARA DETETAR O QUE E A FAZER
-				if((countC >= 25) && ((countR >= 25) || (countL >= 25))) { //Encontrou a meta
-					waitingStart(); //TERMINOU A INVESTIGAÇÃO DO LABIRINTO E DESCOBRIU A META
-					//A stack deve conter o caminho mais curto para a meta
-				} else if((countR >= countAim) && (countL >= countAim)) { //Biforcação ou cruzamento
-					if(detectedLineAhead()){ // É cruzamento
-						if(!isInverted){ //notifica as stacks de que chegou a um cruzamento novo
-							idStackPush(R);
-							branchStackPush(3);
-						}else{ //decrementa o numero de ramos visitados
-							isInverted = 0;
-							int numLeftToVisit = branchStackPop();
-							numLeftToVisit -= 1;
-							branchStackPush(numLeftToVisit);
-							if(numLeftToVisit == 2){
-								idStackPush(S);
-							}else if(numLeftToVisit == 1){
-								idStackPush(L);
-							}else if(numLeftToVisit == 0){
+
+				if((idStackTop != 0) && (stackPointer < idStackTop) && chooseFromStack) {
+
+					
+
+				} else {
+
+					chooseFromStack = 0;
+					// FUNCAO PARA DETETAR O QUE E A FAZER
+					if((countC >= 25) && ((countR >= 25) || (countL >= 25))) { //Encontrou a meta
+						waitingStart(); //TERMINOU A INVESTIGAÇÃO DO LABIRINTO E DESCOBRIU A META
+						//A stack deve conter o caminho mais curto para a meta
+					} else if((countR >= countAim) && (countL >= countAim)) { //Biforcação ou cruzamento
+						if(detectedLineAhead()){ // É cruzamento
+							if(!isInverted){ //notifica as stacks de que chegou a um cruzamento novo
+								idStackPush(R);
+								branchStackPush(3);
+							}else{ //decrementa o numero de ramos visitados
+								isInverted = 0;
+								int numLeftToVisit = branchStackPop();
+								numLeftToVisit -= 1;
+								branchStackPush(numLeftToVisit);
+								if(numLeftToVisit == 2){
+									idStackPush(S);
+								}else if(numLeftToVisit == 1){
+									idStackPush(L);
+								}else if(numLeftToVisit == 0){
+									idStackPop();
+									branchStackPop();
+									isInverted = 1; //não encontrou a meta até aqui. vai embora desse
+								}
+
+							}
+						}else{ //É biforcação em T
+							if(!isInverted){
+								idStackPush(R);
+								branchStackPush(2);
+							}else{
+								isInverted = 0;
+								idStackPop(); //faz pop do R
+								idStackPush(S); //push do S
+								branchStackPop(); //passou a ter apenas 1 ramo por visitar
+								branchStackPush(1);
+							}
+						}
+						turnRight();
+					} else if((countR >= countAim) && (countL < countAim)) { //Curva à direita
+						if(detectedLineAhead()){ //biforcação com curva à direita |-
+							if(!isInverted){
+								idStackPush(R);
+								branchStackPush(2);
+							}else{
 								idStackPop();
 								branchStackPop();
-								isInverted = 1; //não encontrou a meta até aqui. vai embora desse
 							}
-
+						}else{ //Curva simples à direita
+							if(!isInverted){ //se estiver a descobrir caminho
+								idStackPush(R);
+								branchStackPush(1);
+							}else{ //se estiver a regressar de um dead end
+								idStackPop();
+								branchStackPop();
+							}
 						}
-					}else{ //É biforcação em T
-						if(!isInverted){
-							idStackPush(R);
-							branchStackPush(2);
-						}else{
-							isInverted = 0;
-							idStackPop(); //faz pop do R
-							idStackPush(S); //push do S
-							branchStackPop(); //passou a ter apenas 1 ramo por visitar
-							branchStackPush(1);
+						turnRight();
+					} else if((countL >= countAim) && (countR < countAim)) {
+						if(detectedLineAhead()){ //biforcação com curva à esquerda -|
+							if(!isInverted){
+								idStackPush(S);
+								branchStackPush(2);
+							}else{
+								idStackPop();
+								idStackPush(L);
+								branchStackPop();
+								branchStackPush(1);
+							}
+						}else{ //Curva simples à esquerda
+							if(!isInverted){ //se estiver a descobrir caminho
+								idStackPush(L);
+								branchStackPush(1);
+							}else{ //se estiver a regressar de um dead end
+								idStackPop();
+								branchStackPop();
+							}
+							turnLeft();
 						}
-					}
-					turnRight();
-				} else if((countR >= countAim) && (countL < countAim)) { //Curva à direita
-					if(detectedLineAhead()){ //biforcação com curva à direita |-
-						if(!isInverted){
-							idStackPush(R);
-							branchStackPush(2);
-						}else{
-							idStackPop();
-							branchStackPop();
-						}
-					}else{ //Curva simples à direita
-						if(!isInverted){ //se estiver a descobrir caminho
-							idStackPush(R);
-							branchStackPush(1);
-						}else{ //se estiver a regressar de um dead end
-							idStackPop();
-							branchStackPop();
-						}
-					}
-					turnRight();
-				} else if((countL >= countAim) && (countR < countAim)) {
-					if(detectedLineAhead()){ //biforcação com curva à esquerda -|
-						if(!isInverted){
-							idStackPush(S);
-							branchStackPush(2);
-						}else{
-							idStackPop();
-							idStackPush(L);
-							branchStackPop();
-							branchStackPush(1);
-						}
-					}else{ //Curva simples à esquerda
-						if(!isInverted){ //se estiver a descobrir caminho
-							idStackPush(L);
-							branchStackPush(1);
-						}else{ //se estiver a regressar de um dead end
-							idStackPop();
-							branchStackPop();
-						}
-						turnLeft();
 					}
 				}
 
@@ -284,7 +297,6 @@ void initializeVariables(); //Calcula os tempos de acordo com a velocidade
 
 int main(void)
 {
-
 	configureRobot(); //Configura o robot
 	waitingStart();
 	return 0;
@@ -293,11 +305,7 @@ int main(void)
 /* Vai determinar se o robot já sabe o caminho mais curto ou não */
 void run(){
 	//Se for a primeira tentativa, ainda tem que encontrar o caminho
-	if(numTries==0)
-		findBestPath(); //Preenche a idStack
-	else //Caso contrario, vai percorrer o caminho mais curto
-		chooseBestPath(); //Será descomentado mais tarde. Segue a idStack
-	numTries += 1;
+	findBestPath(); //Preenche a idStack
 	waitingStart();
 }
 
