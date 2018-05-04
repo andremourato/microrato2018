@@ -13,7 +13,7 @@ ERROR_LEVEL_2 = 8.5
 #define ERROR_LEVEL_1 1
 #define ERROR_LEVEL_2 3
 #define TURNING_CONSTANT 2
-#define GOAL_CONSTANT 10
+#define GOAL_CONSTANT 15
 #define RIGHT_TURN_CONSTANT TURNING_CONSTANT //Valor máximo do contador. Vai depender da velocidade
 #define DEAD_END_CONSTANT TURNING_CONSTANT //É necessário calibrar estes valores
 //Identificadores
@@ -36,7 +36,7 @@ void turnRight();
 void turnLeft();
 void invertDirection();
 void waitingStart();
-void fillTheStack(int countC, int countR, int countL, int countAim, int isInverted);
+void fillTheStack(int countC, int countR, int countL, int countAim);
 void chooseBestPath();
 /**************************** Stack related methods ***************************************/
 //Identificadores: { R, L, S }
@@ -83,6 +83,7 @@ volatile int sensor;
 int rightCounter = 0;
 int leftCounter = 0;
 int deadEndCounter = 0;
+int isInverted = 0;
 
 /********************************* LÓGICA *********************************/
 int STACK_MAXSIZE = 300;
@@ -90,7 +91,7 @@ int STACK_MAXSIZE = 300;
 int idStack[300];     
 int idStackTop = -1;
 //STACK DO NUMERO DE RAMOS POR INVESTIGAR
-int branchStack[8];     
+int branchStack[300];     
 int branchStackTop = -1;
 
 //**************************** Funções auxiliares (sensores,etc.) ****************************
@@ -181,10 +182,9 @@ void findBestPath(){
 	const static int countAim = 6;
 	static int countR, countL, countC = 0;
 	static int turnDetected = 0;
-	static int isInverted = 0;
 
 	while(!stopButton()) {
-		printf("idPeek = %d | branchPeek = %d\n",idStackPeek(),branchStackPeek());
+		//printf("idPeek = %d | branchPeek = %d\n",idStackPeek(),branchStackPeek());
 		readSensors();
 		adjust();
 		//printInt(sensor, 2 | 5 << 16);
@@ -196,7 +196,7 @@ void findBestPath(){
 
 			if((sensor & 0x11) == 0) {
 
-				fillTheStack(countC,countR,countL,countAim,isInverted);
+				fillTheStack(countC,countR,countL,countAim);
 				countL = 0; countR = 0; countC = 0;
 				turnDetected = 0;
 			} else {
@@ -213,7 +213,7 @@ void findBestPath(){
 	}
 }
 
-void fillTheStack(int countC, int countR, int countL, int countAim, int isInverted){
+void fillTheStack(int countC, int countR, int countL, int countAim){
 	// FUNCAO PARA DETETAR O QUE E A FAZER
 	if((countC >= GOAL_CONSTANT) && ((countR >= GOAL_CONSTANT) || (countL >= GOAL_CONSTANT))) { //Encontrou a meta
 		waitingStart(); //TERMINOU A INVESTIGAÇÃO DO LABIRINTO E DESCOBRIU A META
@@ -229,13 +229,14 @@ void fillTheStack(int countC, int countR, int countL, int countAim, int isInvert
 				numLeftToVisit -= 1;
 				branchStackPush(numLeftToVisit);
 				if(numLeftToVisit == 2){
+					idStackPop();
 					idStackPush(S);
 				}else if(numLeftToVisit == 1){
+					idStackPop();
 					idStackPush(L);
 				}else if(numLeftToVisit == 0){
 					idStackPop();
 					branchStackPop();
-					isInverted = 1; //não encontrou a meta até aqui. vai embora desse
 				}
 			}
 		}else{ //É biforcação em T
@@ -289,6 +290,7 @@ void fillTheStack(int countC, int countR, int countL, int countAim, int isInvert
 				idStackPush(L);
 				branchStackPop();
 				branchStackPush(1);
+				isInverted = 0;
 			}
 		}else{ //Curva simples à esquerda
 			if(!isInverted){ //se estiver a descobrir caminho
@@ -301,6 +303,19 @@ void fillTheStack(int countC, int countR, int countL, int countAim, int isInvert
 			turnLeft();
 		}
 	}
+	int i = 0;
+	printf("\n---idStack---\n");
+	for(; i < idStackTop + 1; i++) {
+		printInt(idStack[i], 10);
+		printf(" ");
+	}
+	printf("\n---branchStack---\n");	
+	for(i = 0; i < branchStackTop + 1; i++) {
+		printInt(branchStack[i], 10);
+		printf(" ");
+	}
+	printf("\nisInverted=%d\n", isInverted);
+	printf("\n-------------\n");
 }
 
 //**************************** Funções para controlar o estado do robot ****************************
