@@ -155,23 +155,16 @@ void invertDirection(){
 //**************************** Algoritmos para percorrer o labirinto ****************************
 /* Segue as indicações da stack. Assume que esta já está preenchida */
 void chooseBestPath(){
-	int stackIndex = 0;
-	while(!stopButton()){
-		readSensors();
-		adjust();
-		if(turnDetected()){
-			int nextMove = idStack[stackIndex++];
-			switch(nextMove){
-				case R: //vira à direita
-					turnRight();
-					break;
-				case L: //vira à esquerda
-					turnLeft();
-					break;
-				case S: //vai em frente
-					break;
-			}
-		}
+	int nextMove = idStack[stackIndex++];
+	switch(nextMove){
+		case R: //vira à direita
+			turnRight();
+			break;
+		case L: //vira à esquerda
+			turnLeft();
+			break;
+		case S: //vai em frente
+			break;
 	}
 }
 
@@ -182,6 +175,10 @@ void findBestPath(){
 	static int countR, countL, countC = 0;
 	static int turnDetected = 0;
 	static int isInverted = 0;
+	static int chooseFromStack = 0;
+	int stackIndex = 0;
+
+	if(!idStackTopIsEmpty) chooseFromStack = 1;
 
 	while(!stopButton()) {
 		printf("idPeek = %d | branchPeek = %d\n",idStackPeek(),branchStackPeek());
@@ -195,8 +192,10 @@ void findBestPath(){
 		if(turnDetected) {
 
 			if((sensor & 0x11) == 0) {
-
-				fillTheStack(countC,countR,countL,countAim,isInverted);
+				if()
+					chooseBestPath();
+				else
+					fillTheStack(countC,countR,countL,countAim,isInverted);
 				countL = 0; countR = 0; countC = 0;
 				turnDetected = 0;
 			} else {
@@ -263,11 +262,11 @@ void fillTheStack(int countC, int countR, int countL, int countAim, int isInvert
 				idStackPush(R);
 				branchStackPush(2);
 			}else{
+				isInverted = 1;
 				idStackPop(); //Faz pop do S
 				idStackPush(L);
 				branchStackPop();
 				branchStackPush(1);
-
 			}
 		}else{ //Curva simples à direita
 			if(!isInverted){ //se estiver a descobrir caminho
