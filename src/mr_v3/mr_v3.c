@@ -11,7 +11,7 @@ ERROR_LEVEL_2 = 8.5
 ------------------------------------------------------------
 */
 #define ERROR_LEVEL_1 1
-#define ERROR_LEVEL_2 3.25
+#define ERROR_LEVEL_2 10
 #define TURNING_CONSTANT 2
 #define GOAL_CONSTANT 15
 #define RIGHT_TURN_CONSTANT TURNING_CONSTANT //Valor máximo do contador. Vai depender da velocidade
@@ -64,10 +64,10 @@ Quando ele estiver bom, alterem o Ki e assim sucessivamente*/
 /*Melhor conjunto de constantes encontrado:
 */
 //Proporionalidade
-double Kp = 14; //Contante de proporcionalidade
+double Kp = 1.5; //Contante de proporcionalidade 14
 //Derivada
 double errorTable[] = {-ERROR_LEVEL_2, -ERROR_LEVEL_1, 0, ERROR_LEVEL_1, ERROR_LEVEL_2};
-double Kd = 120;
+double Kd = 50; // 120
 int D;
 double prevError;
 //Constantes
@@ -75,8 +75,8 @@ double ROBOT_DIAMETER = 0.120; //Em m
 double ROBOT_RADIUS;
 double MAX_SPEED =  0.15; //Em m/s
 // Velocidades
-int speed = 65; //ercentagem da velocidade máxima do motor. Velocidade em linha reta
-int turningSpeed = 40; //Velocidade a virar.
+int speed = 60; //ercentagem da velocidade máxima do motor. Velocidade em linha reta
+int turningSpeed = 45; //Velocidade a virar.
 //Histórico de medidas
 volatile int sensor;
 int isInverted = 0;
@@ -122,30 +122,24 @@ void adjust(){
 }
 void turnRight(){
 	led(2,1);
-	setVel2(turningSpeed,-turningSpeed);
+	setVel2(turningSpeed - 10 ,-turningSpeed);
 	while(!sensorGet(4)) {readSensors();}	
 	while(!detectedLineAhead()){ readSensors(); }
-	setVel2(0,0);
-	delay(250);
 	led(2,0);
 }
 void turnLeft(){
 	led(3,1);
-	setVel2(-turningSpeed,turningSpeed);
+	setVel2(-turningSpeed - 10,turningSpeed - 10);
 	while(!sensorGet(0)) {readSensors();}
 	while(!detectedLineAhead()){ readSensors(); }
-	setVel2(0,0);
-	delay(250);
 	led(3,0);
 }
 void invertDirection(){
 	led(4,1);
 	millis = 0;
-	setVel2(-turningSpeed,turningSpeed); //Vira à esquerda até encontrar a linha de novo
+	setVel2(-turningSpeed - 5,turningSpeed - 10); //Vira à esquerda até encontrar a linha de novo
 	while(!sensorGet(0)) {readSensors();}
-	while(!detectedLineAhead() || millis < 850){ readSensors(); }
-	setVel2(0,0);
-	delay(1000);
+	while(!detectedLineAhead()){ readSensors(); }
 	led(4,0);
 }
 
@@ -168,7 +162,7 @@ void chooseBestPath(stackIndex){
 /* Algoritmo para preencher a idStack. Vai virar sempre à direita */
 void findBestPath(){
 
-	const int countAim = 6;
+	const int countAim = 5;
 	int countR = 0, countL = 0, countC = 0;
 	int turnDetected = 0;
 	int stackIndex = 0;
@@ -178,6 +172,14 @@ void findBestPath(){
 	while(!stopButton()) {
 
 		readSensors();
+		if(chooseFromStack && idStack[stackIndex] == 3) { 
+			speed = 80;
+			Kp = 1.25;
+			Kd = 50;
+		} else { speed = 60;
+			Kp = 1.5;
+			Kd = 25;
+		}
 		adjust();
 		//printInt(sensor, 2 | 5 << 16);
 		//printf("\n");
@@ -233,6 +235,7 @@ void fillTheStack(int countC, int countR, int countL, int countAim){
 				}else if(numLeftToVisit == 0){
 					idStackPop();
 					branchStackPop();
+					isInverted = 1;
 				}
 			}
 		}else{ //É biforcação em T
