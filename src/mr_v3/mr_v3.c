@@ -12,10 +12,15 @@ ERROR_LEVEL_2 = 8.5
 */
 #define ERROR_LEVEL_1 1
 #define ERROR_LEVEL_2 10
-#define TURNING_CONSTANT 2
 #define GOAL_CONSTANT 15
-#define RIGHT_TURN_CONSTANT TURNING_CONSTANT //Valor máximo do contador. Vai depender da velocidade
-#define DEAD_END_CONSTANT TURNING_CONSTANT //É necessário calibrar estes valores
+/////////VELOCIDADE BAIXA/////////////
+#define SPEED_START 60 //60
+#define KP_START 1.5   //1.5
+#define KD_START 25	   //25
+/////////VELOCIDADE ALTA//////////////
+#define SPEED_SPEEDING 75 //80
+#define KP_SPEEDING 1.25  //1.25
+#define KD_SPEEDING	50    // 50
 //Identificadores
 #define R 1 //Curva à direita
 #define L 2 //Curva à esquerda
@@ -173,12 +178,13 @@ void findBestPath(){
 
 		readSensors();
 		if(chooseFromStack && idStack[stackIndex] == 3) { 
-			speed = 80;
-			Kp = 1.25;
-			Kd = 50;
-		} else { speed = 60;
-			Kp = 1.5;
-			Kd = 25;
+			speed = SPEED_SPEEDING;
+			Kp = KP_SPEEDING;
+			Kd = KD_SPEEDING;
+		} else {
+			speed = SPEED_START;
+			Kp = KP_START;
+			Kd = KD_START;
 		}
 		adjust();
 		//printInt(sensor, 2 | 5 << 16);
