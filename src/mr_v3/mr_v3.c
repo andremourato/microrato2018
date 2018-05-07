@@ -11,7 +11,7 @@ ERROR_LEVEL_2 = 8.5
 ------------------------------------------------------------
 */
 #define ERROR_LEVEL_1 1
-#define ERROR_LEVEL_2 7.5
+#define ERROR_LEVEL_2 6.5
 #define GOAL_CONSTANT 16
 /////////VELOCIDADE BAIXA/////////////
 #define SPEED_START 60 //60
