@@ -246,11 +246,11 @@ void fillTheStack(int countC, int countR, int countL, int countAim){
 				int numLeftToVisit = branchStackPop();
 				numLeftToVisit -= 1;
 				branchStackPush(numLeftToVisit);
-				if(numLeftToVisit != 0){
+				if(numLeftToVisit == 1){ //visita o ultimo ramo de um |-
 					isInverted = 0;
 					idStackPop(); //faz pop do R
 					idStackPush(S); //push do S
-				}else{
+				}else if(numLeftToVisit == 0){ //visitou todos os ramos de um -|
 					idStackPop();
 					branchStackPop();
 				}
@@ -263,11 +263,17 @@ void fillTheStack(int countC, int countR, int countL, int countAim){
 				idStackPush(R);
 				branchStackPush(2);
 			}else{
-				idStackPop(); //Faz pop do S
-				idStackPush(L);
-				branchStackPop();
-				branchStackPush(1);
-				isInverted = 0;
+				int numLeftToVisit = branchStackPop();
+				numLeftToVisit -= 1;
+				branchStackPush(numLeftToVisit);
+				if(numLeftToVisit == 1){ //visita o ultimo ramo de um -|
+					idStackPop(); //Faz pop do S
+					idStackPush(L);
+					isInverted = 0;
+				}else if(numLeftToVisit == 0){ //visitou todos os ramos de um T
+					idStackPop();
+					branchStackPop();
+				}
 			}
 		}else{ //Curva simples à direita
 			if(!isInverted){ //se estiver a descobrir caminho
@@ -285,11 +291,17 @@ void fillTheStack(int countC, int countR, int countL, int countAim){
 				idStackPush(S);
 				branchStackPush(2);
 			}else{
-				idStackPop();
-				idStackPush(L);
-				branchStackPop();
-				branchStackPush(1);
-				isInverted = 0;
+				int numLeftToVisit = branchStackPop();
+				numLeftToVisit -= 1;
+				branchStackPush(numLeftToVisit);
+				if(numLeftToVisit == 1){ //visita o ultimo ramo de um |-
+					idStackPop();
+					idStackPush(L);
+					isInverted = 0;
+				}else if(numLeftToVisit == 0){ //visita o ultimo ramo de um |-
+					idStackPop();
+					branchStackPop();
+				}
 			}
 		}else{ //Curva simples à esquerda
 			if(!isInverted){ //se estiver a descobrir caminho
