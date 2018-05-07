@@ -11,16 +11,16 @@ ERROR_LEVEL_2 = 8.5
 ------------------------------------------------------------
 */
 #define ERROR_LEVEL_1 1
-#define ERROR_LEVEL_2 10
-#define GOAL_CONSTANT 15
+#define ERROR_LEVEL_2 7.5
+#define GOAL_CONSTANT 16
 /////////VELOCIDADE BAIXA/////////////
 #define SPEED_START 60 //60
-#define KP_START 1.5   //1.5
-#define KD_START 25	   //25
+#define KP_START 1   //1
+#define KD_START 12	   //12
 /////////VELOCIDADE ALTA//////////////
-#define SPEED_SPEEDING 75 //80
-#define KP_SPEEDING 1.25  //1.25
-#define KD_SPEEDING	50    // 50
+#define SPEED_SPEEDING SPEED_START //80
+#define KP_SPEEDING KP_START       //1.25
+#define KD_SPEEDING	KD_START       // 50
 //Identificadores
 #define R 1 //Curva à direita
 #define L 2 //Curva à esquerda
@@ -33,7 +33,6 @@ int rightDetected(); // 0 -> bit da direita está a 0 | 1 -> bit da direita est�
 int deadEndDetected(); //0 -> quando existe pelo menos 1 bit ON | 1 -> quando todos os bits estao OFF
 int detectedLineAhead();
 int turnDetected();
-double getRealSpeed();
 void stopRobot();
 void resetAllVariables();
 void adjust();
@@ -69,18 +68,14 @@ Quando ele estiver bom, alterem o Ki e assim sucessivamente*/
 /*Melhor conjunto de constantes encontrado:
 */
 //Proporionalidade
-double Kp = 1.5; //Contante de proporcionalidade 14
+double Kp = KP_START; //Contante de proporcionalidade 14
 //Derivada
 double errorTable[] = {-ERROR_LEVEL_2, -ERROR_LEVEL_1, 0, ERROR_LEVEL_1, ERROR_LEVEL_2};
-double Kd = 50; // 120
+double Kd = KD_START; // 120
 int D;
 double prevError;
-//Constantes
-double ROBOT_DIAMETER = 0.120; //Em m
-double ROBOT_RADIUS;
-double MAX_SPEED =  0.15; //Em m/s
 // Velocidades
-int speed = 60; //ercentagem da velocidade máxima do motor. Velocidade em linha reta
+int speed = SPEED_START; //ercentagem da velocidade máxima do motor. Velocidade em linha reta
 int turningSpeed = 45; //Velocidade a virar.
 //Histórico de medidas
 volatile int sensor;
@@ -103,7 +98,6 @@ void readSensors(){ sensor = readLineSensors(0); }
 int rightDetected(){ return sensorGet(4); }
 int leftDetected(){ return sensorGet(0); }
 int deadEndDetected(){ return sensor == 0; }
-double getRealSpeed(){ return speed*MAX_SPEED/100.0; } //a variavel speed é apenas a percentagem da velocidade máxima
 int detectedLineAhead(){ return (sensorGet(1) || sensorGet(2) || sensorGet(3)) && (!sensorGet(0) && !sensorGet(4)); }
 void stopRobot(){ setVel2(0,0); }
 void resetAllVariables() {stopRobot();}
@@ -127,14 +121,14 @@ void adjust(){
 }
 void turnRight(){
 	led(2,1);
-	setVel2(turningSpeed - 10 ,-turningSpeed);
+	setVel2(turningSpeed - 16,-turningSpeed-9); //(turning-15,-turning-10)
 	while(!sensorGet(4)) {readSensors();}	
 	while(!detectedLineAhead()){ readSensors(); }
 	led(2,0);
 }
 void turnLeft(){
 	led(3,1);
-	setVel2(-turningSpeed - 10,turningSpeed - 10);
+	setVel2(-turningSpeed - 3,turningSpeed - 17); //(-turning-4,turning-16)
 	while(!sensorGet(0)) {readSensors();}
 	while(!detectedLineAhead()){ readSensors(); }
 	led(3,0);
@@ -142,7 +136,7 @@ void turnLeft(){
 void invertDirection(){
 	led(4,1);
 	millis = 0;
-	setVel2(-turningSpeed - 5,turningSpeed - 10); //Vira à esquerda até encontrar a linha de novo
+	setVel2(-turningSpeed - 10,turningSpeed - 10); //Vira à esquerda até encontrar a linha de novo
 	while(!sensorGet(0)) {readSensors();}
 	while(!detectedLineAhead()){ readSensors(); }
 	led(4,0);
