@@ -11,16 +11,17 @@ ERROR_LEVEL_2 = 8.5
 ------------------------------------------------------------
 */
 #define ERROR_LEVEL_1 1
-#define ERROR_LEVEL_2 6.5
-#define GOAL_CONSTANT 16
+#define ERROR_LEVEL_2 4.25 // 4.25
+#define GOAL_CONSTANT 13
 /////////VELOCIDADE BAIXA/////////////
 #define SPEED_START 60 //60
-#define KP_START 1   //1
-#define KD_START 12	   //12
+#define KP_START 3.75 // 3.75
+#define KD_START 35 //12 // 30
 /////////VELOCIDADE ALTA//////////////
 #define SPEED_SPEEDING SPEED_START //80
-#define KP_SPEEDING KP_START       //1.25
-#define KD_SPEEDING	KD_START       // 50
+#define SPEED_BREAKING 45 // 45
+#define KP_SPEEDING 6       //1.25 4
+#define KD_SPEEDING 50       // 50 50
 //Identificadores
 #define R 1 //Curva à direita
 #define L 2 //Curva à esquerda
@@ -80,6 +81,7 @@ int turningSpeed = 45; //Velocidade a virar.
 //Histórico de medidas
 volatile int sensor;
 int isInverted = 0;
+int isSpeeding = 0;
 
 /********************************* LÓGICA *********************************/
 int STACK_MAXSIZE = 300;
@@ -124,21 +126,24 @@ void turnRight(){
 	setVel2(turningSpeed - 16,-turningSpeed-9); //(turning-15,-turning-10)
 	while(!sensorGet(4)) {readSensors();}	
 	while(!detectedLineAhead()){ readSensors(); }
+	millis = 0;
 	led(2,0);
 }
 void turnLeft(){
 	led(3,1);
-	setVel2(-turningSpeed - 3,turningSpeed - 17); //(-turning-4,turning-16)
+	setVel2(-turningSpeed - 4,turningSpeed - 20); //(-turning-4,turning-16)
 	while(!sensorGet(0)) {readSensors();}
 	while(!detectedLineAhead()){ readSensors(); }
+	millis = 0;
 	led(3,0);
 }
 void invertDirection(){
 	led(4,1);
 	millis = 0;
-	setVel2(-turningSpeed - 10,turningSpeed - 10); //Vira à esquerda até encontrar a linha de novo
+	setVel2(-turningSpeed ,turningSpeed - 13); //Vira à esquerda até encontrar a linha de novo
 	while(!sensorGet(0)) {readSensors();}
-	while(!detectedLineAhead()){ readSensors(); }
+	while(!detectedLineAhead() || (millis < 800)){ readSensors(); }
+	millis = 0;
 	led(4,0);
 }
 
@@ -171,15 +176,23 @@ void findBestPath(){
 	while(!stopButton()) {
 
 		readSensors();
-		if(chooseFromStack && idStack[stackIndex] == 3) { 
+		/*
+		if(chooseFromStack && idStack[stackIndex] == 3 && millis > 350) {
+			isSpeeding = 1;
 			speed = SPEED_SPEEDING;
 			Kp = KP_SPEEDING;
 			Kd = KD_SPEEDING;
 		} else {
-			speed = SPEED_START;
-			Kp = KP_START;
-			Kd = KD_START;
+			if(isSpeeding) {
+				isSpeeding = 0;
+				speed = SPEED_BREAKING;
+			} else {
+				speed = SPEED_START;
+				Kp = KP_START;
+				Kd = KD_START;
+			}
 		}
+		*/
 		adjust();
 		//printInt(sensor, 2 | 5 << 16);
 		//printf("\n");
