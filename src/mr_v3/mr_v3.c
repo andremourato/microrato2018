@@ -12,9 +12,9 @@ ERROR_LEVEL_2 = 8.5
 */
 #define ERROR_LEVEL_1 1
 #define ERROR_LEVEL_2 4.25 // 4.25
-#define GOAL_CONSTANT 13
+#define GOAL_CONSTANT 16
 /////////VELOCIDADE BAIXA/////////////
-#define SPEED_START 60 //60
+#define SPEED_START 50 //60
 #define KP_START 3.75 // 3.75
 #define KD_START 35 //12 // 30
 /////////VELOCIDADE ALTA//////////////
