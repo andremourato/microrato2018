@@ -1,7 +1,9 @@
-# Micro Rato 2018 e 2019
+# Micro Rato
 O Concurso Micro-Rato nasceu em 1995 por iniciativa de alguns docentes do então Departamento de Electrónica, Telecomunicações e Informática (DETI), convencidos de que poderia constituir um factor de motivação e de complemento de formação para os alunos deste departamento. Contudo, rápido se percebeu que o potencial desta atividade extravasava em muito as fronteiras do atual DETI e da própria Universidade de Aveiro (UA) e constituía uma resposta a uma solicitação da sociedade civil de desenvolver apetência por área tecnológicas de vanguarda e de contribuir para a respectiva desmistificação, compreensão e utilização. A competição é organizada pelo IEEE UA Student Brach.
 
 ## Pathfinder
 O PathFinder é a modalidade do MicroRato para alunos das escolas secundarias e primeiro ciclo de ensino superior. O objetivo desta competição é resolver um labirinto, encontrando o caminho mais rápido para ir do ponto de partida ao ponto de chegada. O labirinto é definido através de um conjunto de linhas pretas marcadas sobre um fundo branco, tendo o robô que se deslocar, exclusivamente, sobre essas linhas. O robô que efetuar o caminho entre o ponto de partida e o ponto de chegada em menos tempo, é o vencedor. As equipas serão constituídas por um número mínimo e máximo de elementos a estabelecer pela Comissão Organizadora para cada edição da prova. Todos os elementos das equipas deverão ser alunos do ensino Básico, Secundário e Universitário, neste último caso desde que apenas inscritos em disciplinas de um dos 3 anos curriculares correspondentes ao primeiro ciclo de Bolonha. As equipas constituídas maioritariamente por alunos inscritos em dos cursos da responsabilidade do Dep. de Electrónica Telecomunicações e Informática da Universidade de Aveiro poderão candidatar-se à utilização de um kit robótico com sensores e atuadores compatíveis com o desafio proposto.
 
 Este código foi vencedor da categoria Pathfinder de 2 edições consecutivas do Microrato.
+
+<img src="https://user-images.githubusercontent.com/23279460/80325492-4aea5b00-882d-11ea-8edf-f7efea0ccf7d.jpg" width="800"/>
