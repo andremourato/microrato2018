@@ -1,10 +1,7 @@
-# Micro Rato 2018
-# Branches:
-- master - Usado para fazer testes. Pode ser alterado como vocês quiserem</br>
-- Develop - Branch principal. Contém apenas as versões funcionais do robot. Não mexer se nec</br>
-- Andre - Branch pessoal do André. Uso isto para fazer os meus testes, sem interferir com o master</br>
-# Problemas:
---- 01/05/2018 ---
-- Calibrar os valores das constantes Kp, Ki e Kd. Calibrem com uma velocidade elevada (ex: 60), porque isto vai evidênciar as falhas de rota que devem ser corrigidas nas linhas retas.</br>
-- Melhorar as curvas: para curvas à direita e à esquerda (sem caminho em frente) ele tem tendencia a despistar-se, por isso é necessário calibrar as curvas, ver qual é a melhor condição de paragem de curva. Nas curvas que têm caminho para a frente, ele não vira e segue em frente.
-- Entre outros, mas de momento estes são os mais importantes. O robot deve ficar bem calibrado antes de tentarmos resolver outros problemas, porque muitos deles são resultantes da instabilidade do robot nas retas.
+# Micro Rato 2018 e 2019
+O Concurso Micro-Rato nasceu em 1995 por iniciativa de alguns docentes do então Departamento de Electrónica, Telecomunicações e Informática (DETI), convencidos de que poderia constituir um factor de motivação e de complemento de formação para os alunos deste departamento. Contudo, rápido se percebeu que o potencial desta atividade extravasava em muito as fronteiras do atual DETI e da própria Universidade de Aveiro (UA) e constituía uma resposta a uma solicitação da sociedade civil de desenvolver apetência por área tecnológicas de vanguarda e de contribuir para a respectiva desmistificação, compreensão e utilização. A competição é organizada pelo IEEE UA Student Brach.
+
+## Pathfinder
+O PathFinder é a modalidade do MicroRato para alunos das escolas secundarias e primeiro ciclo de ensino superior. O objetivo desta competição é resolver um labirinto, encontrando o caminho mais rápido para ir do ponto de partida ao ponto de chegada. O labirinto é definido através de um conjunto de linhas pretas marcadas sobre um fundo branco, tendo o robô que se deslocar, exclusivamente, sobre essas linhas. O robô que efetuar o caminho entre o ponto de partida e o ponto de chegada em menos tempo, é o vencedor. As equipas serão constituídas por um número mínimo e máximo de elementos a estabelecer pela Comissão Organizadora para cada edição da prova. Todos os elementos das equipas deverão ser alunos do ensino Básico, Secundário e Universitário, neste último caso desde que apenas inscritos em disciplinas de um dos 3 anos curriculares correspondentes ao primeiro ciclo de Bolonha. As equipas constituídas maioritariamente por alunos inscritos em dos cursos da responsabilidade do Dep. de Electrónica Telecomunicações e Informática da Universidade de Aveiro poderão candidatar-se à utilização de um kit robótico com sensores e atuadores compatíveis com o desafio proposto.
+
+Este código foi vencedor da categoria Pathfinder de 2 edições consecutivas do Microrato.
